@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>متجر شحن الألعاب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@600;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f5ff; --ink:#141a3d; --muted:#5b6188;
+    --violet:#5b3df5; --coin:#ffc93c; --card:#ffffff; --line:#dfe3f7;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  header{background:var(--ink);color:#fff;padding:48px 20px 56px;text-align:center}
+  header h1{font-family:'Changa',sans-serif;font-weight:800;font-size:clamp(2rem,6vw,3.2rem);line-height:1.2}
+  header p{color:#b9bfe6;margin-top:10px;font-size:1.05rem}
+  .pay{display:inline-block;margin-top:18px;background:var(--coin);color:var(--ink);font-weight:700;padding:6px 16px;border-radius:999px;font-size:.95rem}
+  main{max-width:1000px;margin:-28px auto 60px;padding:0 16px}
+  .game{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:22px}
+  .game h2{font-family:'Changa',sans-serif;font-size:1.5rem;margin-bottom:4px}
+  .game .sub{color:var(--muted);margin-bottom:16px}
+  .packs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .pack{border:1.5px solid var(--line);border-radius:12px;padding:14px;text-align:center;background:#fafbff}
+  .pack b{display:block;font-size:1.05rem}
+  .pack span{display:block;color:var(--violet);font-weight:700;margin:4px 0 10px}
+  .pack a{display:block;background:var(--violet);color:#fff;text-decoration:none;font-weight:700;padding:8px;border-radius:9px}
+  .pack a:hover,.pack a:focus-visible{background:var(--ink);outline:2px solid var(--coin);outline-offset:2px}
+  .empty{text-align:center;color:var(--muted);padding:40px 0}
+  footer{text-align:center;color:var(--muted);padding:0 16px 40px;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>شحن ألعاب سريع</h1>
+  <p>اختر لعبتك والباقة، وتواصل معنا لإتمام الطلب</p>
+  <div class="pay" id="payLine"></div>
+</header>
+
+<main id="store"></main>
+
+<footer>© <span id="year"></span> متجر شحن الألعاب</footer>
+
+<script>
+/* ============================================================
+   الإعدادات: عدّل هون بس، وما تحتاج تلمس باقي الكود
+   ============================================================ */
+
+// رقم واتساب للتواصل بصيغة دولية بدون + ولا أصفار (مثال: 963912345678)
+const WHATSAPP = "963000000000";
+
+// طرق الدفع اللي بتظهر فوق
+const PAYMENT_METHODS = ["سيرياتل كاش", "شام كاش دولار", "شام كاش سوري", "باينانس"];
+
+// الألعاب والباقات. لإضافة لعبة جديدة: انسخ كتلة { ... } كاملة وحطها بعد فاصلة
+const GAMES = [
+  {
+    name: "PUBG Mobile",
+    sub: "شحن شدات UC",
+    packs: [
+      { label: "60 UC",   price: "1.2$" },
+      { label: "325 UC",  price: "5.5$" },
+      { label: "660 UC",  price: "11$"  }
+    ]
+  },
+  {
+    name: "Free Fire",
+    sub: "شحن جواهر",
+    packs: [
+      { label: "100 جوهرة", price: "1$" },
+      { label: "310 جوهرة", price: "3$" },
+      { label: "520 جوهرة", price: "5$" }
+    ]
+  }
+];
+
+/* ============================================================
+   من هون لتحت كود الموقع، ما تحتاج تعدله
+   ============================================================ */
+document.getElementById("year").textContent = new Date().getFullYear();
+document.getElementById("payLine").textContent = "ندعم الدفع عبر: " + PAYMENT_METHODS.join(" • ");
+
+const store = document.getElementById("store");
+
+function waLink(game, pack){
+  const msg = `مرحباً، بدي أطلب: ${game.name} - ${pack.label} (${pack.price})`;
+  return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+}
+
+if (GAMES.length === 0) {
+  store.innerHTML = '<p class="empty">ما في ألعاب حالياً، ارجع قريباً.</p>';
+} else {
+  GAMES.forEach(game => {
+    const sec = document.createElement("section");
+    sec.className = "game";
+    const h = document.createElement("h2"); h.textContent = game.name;
+    const s = document.createElement("p"); s.className = "sub"; s.textContent = game.sub;
+    const grid = document.createElement("div"); grid.className = "packs";
+    game.packs.forEach(pack => {
+      const d = document.createElement("div"); d.className = "pack";
+      const b = document.createElement("b"); b.textContent = pack.label;
+      const p = document.createElement("span"); p.textContent = pack.price;
+      const a = document.createElement("a");
+      a.href = waLink(game, pack); a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "اطلب الآن";
+      d.append(b, p, a); grid.appendChild(d);
+    });
+    sec.append(h, s, grid); store.appendChild(sec);
+  });
+}
+</script>
+</body>
+</html>
