@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة الإدارة | ULTRA0</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#000;--card:#110709;--line:#3a1217;--main:#b3001b;--main2:#e01e37;--text:#f6ecec;--muted:#a58b8e;box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:12px}
+.box{max-width:760px;margin:0 auto}
+h1{color:var(--main2);font-size:22px;margin:8px 0 14px}
+input,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px;color:var(--text);font-family:inherit;font-size:14px;margin-bottom:8px}
+button{font-family:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--main);color:#fff;font-weight:700;cursor:pointer}
+button.gray{background:#2a2a2a;border:1px solid var(--line)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;background:var(--card);border:1px solid var(--line)}.tabs button.on{background:var(--main)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:13px}.err{color:var(--main2);min-height:20px;font-size:13px;margin:6px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.st{padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+</style>
+</head>
+<body><div class="box">
+<h1>لوحة إدارة ULTRA0</h1>
+<div id="login" style="display:none" class="card">
+  <input id="em" type="email" dir="ltr" placeholder="البريد الإلكتروني" autocomplete="email">
+  <input id="pw" type="password" dir="ltr" placeholder="كلمة السر" autocomplete="current-password">
+  <div class="err" id="msg"></div>
+  <button id="go" style="width:100%">دخول</button>
+</div>
+<div id="app" style="display:none">
+  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="products">المنتجات</button></div>
+  <div id="view"></div>
+  <button class="gray" id="out" style="margin-top:10px">تسجيل الخروج</button>
+</div>
+</div>
+<script>
+const SB_URL="https://sbzdkuyxccfyvktjhdas.supabase.co", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiemRrdXl4Y2NmeXZrdGpoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTEzOTksImV4cCI6MjEwNzEyNzM5OX0.fuUbL4xWUndqylQXTJzCTXIY8Qd6V85pXvF40eJ5jYs";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ST = {pending:"قيد التنفيذ", done:"تم", rejected:"مرفوض"};
+let tabName = "users", usersCache = [];
+
+function show(w){ $("login").style.display = w==="login"?"block":"none"; $("app").style.display = w==="app"?"block":"none"; }
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session) return show("login");
+  const {data} = await sb.from("profiles").select("is_admin").eq("id", session.user.id).single();
+  if(!data || !data.is_admin){ await sb.auth.signOut(); $("msg").textContent = "هذا الحساب ليس أدمن"; return show("login"); }
+  show("app"); render();
+}
+$("go").onclick = async ()=>{
+  const {error} = await sb.auth.signInWithPassword({email:$("em").value.trim(), password:$("pw").value});
+  if(error){ $("msg").textContent = "البريد أو كلمة السر غير صحيحة"; return; }
+  $("msg").textContent = ""; init();
+};
+$("out").onclick = async ()=>{ await sb.auth.signOut(); show("login"); };
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  tabName = b.dataset.t;
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on", x===b));
+  render();
+});
+function fail(e){ alert("خطأ: " + (e.message||e)); }
+
+async function render(){
+  const v = $("view"); v.innerHTML = '<div class="muted">جاري التحميل...</div>';
+  if(tabName==="users"){
+    const {data,error} = await sb.from("profiles").select("email,balance,is_admin").order("created_at",{ascending:false}).limit(300);
+    if(error) return fail(error);
+    usersCache = data;
+    v.innerHTML = '<div class="card"><b>إضافة رصيد</b><input id="ue" dir="ltr" placeholder="ايميل الزبون"><input id="ua" type="number" step="0.01" placeholder="المبلغ بالدولار (سالب للخصم)"><button id="uadd" style="width:100%">إضافة</button></div>'+
+      '<input id="usr" placeholder="ابحث بالايميل..."><div id="ulist"></div>';
+    const draw = ()=>{
+      const q = $("usr").value.trim().toLowerCase();
+      $("ulist").innerHTML = usersCache.filter(u=>!q||u.email.includes(q)).map(u=>
+        '<div class="card row" data-e="'+esc(u.email)+'" style="cursor:pointer"><span dir="ltr">'+esc(u.email)+(u.is_admin?' ★':'')+'</span><b>'+Number(u.balance).toFixed(2)+' $</b></div>').join("") || '<div class="muted">لا يوجد</div>';
+      $("ulist").querySelectorAll("[data-e]").forEach(c=>c.onclick=()=>{ $("ue").value = c.dataset.e; $("ua").focus(); });
+    };
+    $("usr").oninput = draw; draw();
+    $("uadd").onclick = async ()=>{
+      const a = parseFloat($("ua").value);
+      if(!$("ue").value.trim() || !isFinite(a) || a===0) return alert("اكتب الايميل والمبلغ");
+      if(!confirm("إضافة "+a+" $ إلى "+$("ue").value.trim()+" ؟")) return;
+      const {error} = await sb.rpc("admin_add_balance",{p_email:$("ue").value, p_amount:a});
+      if(error) return fail(error.message==="user_not_found"?"الايميل غير موجود أو الرصيد يصير سالب":error);
+      render();
+    };
+  }
+  if(tabName==="orders"){
+    const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,profiles(email)").order("id",{ascending:false}).limit(100);
+    if(error) return fail(error);
+    v.innerHTML = data.map(o=>
+      '<div class="card"><div class="row"><b>#'+o.id+' — '+esc(o.product_name)+'</b><span class="st">'+ST[o.status]+'</span></div>'+
+      '<div class="muted">'+esc(o.game)+' • '+Number(o.price).toFixed(2)+' $ • <span dir="ltr">'+esc(o.profiles&&o.profiles.email)+'</span></div>'+
+      '<div class="muted">ID اللاعب: <b dir="ltr">'+esc(o.player_id||"-")+'</b> • '+new Date(o.created_at).toLocaleString("ar")+'</div>'+
+      (o.status==="pending"?'<div class="two" style="margin-top:8px"><button data-o="'+o.id+'" data-s="done">تم التنفيذ</button><button class="gray" data-o="'+o.id+'" data-s="rejected">رفض + استرجاع</button></div>':'')+'</div>').join("") || '<div class="muted">لا توجد طلبات</div>';
+    v.querySelectorAll("[data-o]").forEach(b=>b.onclick=async()=>{
+      if(b.dataset.s==="rejected" && !confirm("رفض الطلب وإرجاع الرصيد؟")) return;
+      const {error} = await sb.rpc("admin_set_order",{p_order:+b.dataset.o, p_status:b.dataset.s});
+      if(error) return fail(error); render();
+    });
+  }
+  if(tabName==="products"){
+    const {data,error} = await sb.from("products").select("*").order("game").order("sort");
+    if(error) return fail(error);
+    v.innerHTML = '<div class="card"><b>إضافة منتج</b><input id="pg" placeholder="اسم اللعبة/القسم (متل ما بالموقع: Jawaker)"><input id="pn" placeholder="اسم المنتج (مثلا: 60 UC)"><input id="pp" type="number" step="0.01" placeholder="السعر بالدولار"><button id="padd" style="width:100%">إضافة</button></div>'+
+      data.map(p=>'<div class="card row"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.game)+' • '+Number(p.price).toFixed(2)+' $'+(p.active?'':' • مخفي')+'</div></div>'+
+      '<div><button class="gray" data-t="'+p.id+'" data-a="'+p.active+'">'+(p.active?'إخفاء':'إظهار')+'</button> <button class="gray" data-d="'+p.id+'">حذف</button></div></div>').join("");
+    $("padd").onclick = async ()=>{
+      const price = parseFloat($("pp").value);
+      if(!$("pg").value.trim() || !$("pn").value.trim() || !isFinite(price)) return alert("عبّي كل الخانات");
+      const {error} = await sb.from("products").insert({game:$("pg").value.trim(), name:$("pn").value.trim(), price});
+      if(error) return fail(error); render();
+    };
+    v.querySelectorAll("[data-t]").forEach(b=>b.onclick=async()=>{
+      const {error} = await sb.from("products").update({active: b.dataset.a!=="true"}).eq("id", b.dataset.t);
+      if(error) return fail(error); render();
+    });
+    v.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("حذف المنتج؟")) return;
+      const {error} = await sb.from("products").delete().eq("id", b.dataset.d);
+      if(error) return fail(error); render();
+    });
+  }
+}
+init();
+</script>
+</body>
+</html>
