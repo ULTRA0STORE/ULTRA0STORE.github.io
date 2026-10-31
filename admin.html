@@ -33,7 +33,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
   <button id="go" style="width:100%">دخول</button>
 </div>
 <div id="app" style="display:none">
-  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="products">المنتجات</button></div>
+  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sup">المزوّد</button></div>
   <div id="view"></div>
   <button class="gray" id="out" style="margin-top:10px">تسجيل الخروج</button>
 </div>
@@ -44,7 +44,9 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ST = {pending:"قيد التنفيذ", done:"تم", rejected:"مرفوض"};
-let tabName = "users", usersCache = [];
+let tabName = "users", usersCache = [], catsCache = [];
+const pathOf = id => { const c = catsCache.find(x=>x.id==id); return c ? (c.parent_id ? pathOf(c.parent_id)+" > " : "")+c.name : ""; };
+const catOpts = root => (root?'<option value="">قسم رئيسي (بدون أب)</option>':'<option value="">اختر القسم</option>')+catsCache.map(c=>'<option value="'+c.id+'">'+esc(pathOf(c.id))+'</option>').join("");
 
 function show(w){ $("login").style.display = w==="login"?"block":"none"; $("app").style.display = w==="app"?"block":"none"; }
 async function init(){
@@ -105,16 +107,45 @@ async function render(){
       if(error) return fail(error); render();
     });
   }
+  if(tabName==="sup"){
+    const {data} = await sb.from("settings").select("value").eq("key","margin").maybeSingle();
+    v.innerHTML = '<div class="card"><b>نسبة الربح %</b><input id="mg" type="number" step="0.1" value="'+(data?data.value:10)+'"><button id="mgs" style="width:100%">حفظ النسبة</button></div><div class="card"><button id="s1" style="width:100%">تحديث الأقسام والمنتجات من المزوّد</button><div style="height:8px"></div><button id="s2" class="gray" style="width:100%">فحص الطلبات الآن</button><div id="sres" class="muted" style="margin-top:8px"></div></div>';
+    $("mgs").onclick = async ()=>{ const {error} = await sb.from("settings").upsert({key:"margin", value:String(+$("mg").value||0)}); if(error) return fail(error); alert("تم الحفظ، بتطبق عند التحديث القادم"); };
+    const run = async (job,btn)=>{ btn.disabled = true; $("sres").textContent = "جاري التنفيذ..."; const {data,error} = await sb.functions.invoke("sync",{body:{job}}); btn.disabled = false; $("sres").textContent = error ? ("خطأ: "+error.message) : JSON.stringify(data); };
+    $("s1").onclick = ()=>run("products",$("s1")); $("s2").onclick = ()=>run("orders",$("s2"));
+  }
+  if(tabName==="cats"){
+    const {data,error} = await sb.from("categories").select("*").order("sort").order("id");
+    if(error) return fail(error);
+    catsCache = data;
+    v.innerHTML = '<div class="card"><b>إضافة قسم</b><select id="cp">'+catOpts(true)+'</select><input id="cn" placeholder="اسم القسم"><input id="ci" dir="ltr" placeholder="رابط الصورة (اختياري)"><button id="cadd" style="width:100%">إضافة</button></div>'+
+      data.map(c=>'<div class="card row"><div><b>'+esc(pathOf(c.id))+'</b>'+(c.active?'':'<div class="muted">مخفي</div>')+'</div><div><button class="gray" data-ct="'+c.id+'" data-a="'+c.active+'">'+(c.active?'إخفاء':'إظهار')+'</button> <button class="gray" data-cd="'+c.id+'">حذف</button></div></div>').join("");
+    $("cadd").onclick = async ()=>{
+      if(!$("cn").value.trim()) return alert("اكتب اسم القسم");
+      const {error} = await sb.from("categories").insert({parent_id:$("cp").value||null, name:$("cn").value.trim(), image:$("ci").value.trim()||null});
+      if(error) return fail(error); render();
+    };
+    v.querySelectorAll("[data-ct]").forEach(b=>b.onclick=async()=>{
+      const {error} = await sb.from("categories").update({active: b.dataset.a!=="true"}).eq("id", b.dataset.ct);
+      if(error) return fail(error); render();
+    });
+    v.querySelectorAll("[data-cd]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("حذف القسم وكل الأقسام اللي تحته؟")) return;
+      const {error} = await sb.from("categories").delete().eq("id", b.dataset.cd);
+      if(error) return fail(error); render();
+    });
+  }
   if(tabName==="products"){
+    const cr = await sb.from("categories").select("*").order("sort").order("id"); catsCache = cr.data||[];
     const {data,error} = await sb.from("products").select("*").order("game").order("sort");
     if(error) return fail(error);
-    v.innerHTML = '<div class="card"><b>إضافة منتج</b><input id="pg" placeholder="اسم اللعبة/القسم (متل ما بالموقع: Jawaker)"><input id="pn" placeholder="اسم المنتج (مثلا: 60 UC)"><input id="pp" type="number" step="0.01" placeholder="السعر بالدولار"><button id="padd" style="width:100%">إضافة</button></div>'+
-      data.map(p=>'<div class="card row"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(p.game)+' • '+Number(p.price).toFixed(2)+' $'+(p.active?'':' • مخفي')+'</div></div>'+
+    v.innerHTML = '<div class="card"><b>إضافة منتج</b><select id="pg">'+catOpts(false)+'</select><input id="pn" placeholder="اسم المنتج (مثلا: 60 UC)"><input id="pp" type="number" step="0.01" placeholder="السعر بالدولار"><button id="padd" style="width:100%">إضافة</button></div>'+
+      data.map(p=>'<div class="card row"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(pathOf(p.category_id)||p.game)+' • '+Number(p.price).toFixed(2)+' $'+(p.active?'':' • مخفي')+'</div></div>'+
       '<div><button class="gray" data-t="'+p.id+'" data-a="'+p.active+'">'+(p.active?'إخفاء':'إظهار')+'</button> <button class="gray" data-d="'+p.id+'">حذف</button></div></div>').join("");
     $("padd").onclick = async ()=>{
       const price = parseFloat($("pp").value);
-      if(!$("pg").value.trim() || !$("pn").value.trim() || !isFinite(price)) return alert("عبّي كل الخانات");
-      const {error} = await sb.from("products").insert({game:$("pg").value.trim(), name:$("pn").value.trim(), price});
+      if(!$("pg").value || !$("pn").value.trim() || !isFinite(price)) return alert("عبّي كل الخانات");
+      const {error} = await sb.from("products").insert({category_id:+$("pg").value, game:(catsCache.find(c=>c.id==$("pg").value)||{}).name, name:$("pn").value.trim(), price});
       if(error) return fail(error); render();
     };
     v.querySelectorAll("[data-t]").forEach(b=>b.onclick=async()=>{
