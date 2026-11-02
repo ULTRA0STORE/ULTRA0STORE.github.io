@@ -112,6 +112,15 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px 40p
 .pcard .pp{font-size:13px;color:var(--muted);font-weight:700}
 .buybox{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
 .buybox .tot{font-weight:800}
+body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+.fab{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.fabmenu{bottom:calc(156px + env(safe-area-inset-bottom,0px))}
+.toast{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+.bnav{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(94%,520px);z-index:42;display:flex;justify-content:space-around;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:30px;padding:8px 4px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.bnav button{background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:700;padding:2px 8px;font-family:inherit}
+.bnav button i{font-style:normal;font-size:21px;line-height:1.2}
+.bnav .home{color:var(--text)}
+.bnav .home i{background:var(--main);color:#fff;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:-22px;box-shadow:0 4px 14px rgba(224,30,55,.5)}
 </style>
 </head>
 <body>
@@ -432,6 +441,7 @@ async function loadMe(){
 function refreshUser(){
   $("loginBtn").textContent = me ? money(me.balance) : "تسجيل الدخول";
   $("mLogin").textContent = me ? "حسابي" : "تسجيل الدخول";
+  if($("navAcc")) $("navAcc").textContent = me ? "حسابي" : "دخول";
 }
 async function openAuth(){
   if(!sb){ openSheet("الحساب", '<div class="note">نظام الحسابات غير مفعّل بعد.</div>'); return; }
@@ -536,6 +546,23 @@ if(!seen){
   }, 1200);
 }
 loadMe();
+
+(function(){
+  const nav = document.createElement("nav"); nav.className = "bnav";
+  const goHome = ()=>{ closeSheet(); toggleMenu(false); $("page").classList.remove("show"); window.scrollTo({top:0,behavior:"smooth"}); };
+  const orders = async ()=>{ await openAuth(); if(me && $("myOrders")) $("myOrders").scrollIntoView({behavior:"smooth"}); };
+  const wallet = ()=>{
+    if(!me) return openAuth();
+    openSheet("رصيدي", '<div class="note">رصيدك الحالي: <b>'+money(me.balance)+'</b><br>لشحن الرصيد تواصل معنا على واتساب</div><a class="buy wa" style="display:block;padding:12px" target="_blank" rel="noopener" href="https://wa.me/'+WA_MAIN+'?text='+encodeURIComponent("مرحباً، أريد شحن رصيد على حسابي: "+me.email)+'">شحن الرصيد عبر واتساب</a>');
+  };
+  const items = [["🎮","الألعاب",()=>openTree("الألعاب"),""],["📦","طلباتي",orders,""],["🏠","الرئيسية",goHome,"home"],["💳","رصيدي",wallet,""],["👤",()=>me?"حسابي":"دخول",openAuth,""]];
+  items.forEach(it=>{
+    const b = document.createElement("button"); if(it[3]) b.className = it[3];
+    b.innerHTML = '<i>'+it[0]+'</i><span'+(typeof it[1]==="function"?' id="navAcc"':'')+'>'+(typeof it[1]==="function"?it[1]():it[1])+'</span>';
+    b.onclick = it[2]; nav.appendChild(b);
+  });
+  document.body.appendChild(nav);
+})();
 </script>
 </body>
 </html>
