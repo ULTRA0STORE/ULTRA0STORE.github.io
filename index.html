@@ -99,6 +99,19 @@ background:linear-gradient(45deg,rgba(255,255,255,.07) 25%,transparent 25%,trans
 .tile.off:hover .ico{box-shadow:none;border-color:var(--line)}
 footer{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px 40px;border-top:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){.ticker span{animation:none}.slide{transition:none}}
+.fabmenu{position:fixed;left:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px));z-index:45;display:none;flex-direction:column;gap:8px}
+.fabmenu.show{display:flex}
+.fabmenu a{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:8px 14px 8px 10px;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fabmenu i{font-style:normal;font-size:18px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px}
+.pcard{background:none;border:0;color:var(--text);text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.pcard .pimg{width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;border:2px solid var(--line);font-size:36px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#d3112b,#7a0010)}
+.pcard.sel .pimg{border-color:var(--main2)}
+.pcard img{width:100%;height:100%;object-fit:cover}
+.pcard .pn{font-size:12.5px;font-weight:700;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .pp{font-size:13px;color:var(--muted);font-weight:700}
+.buybox{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
+.buybox .tot{font-weight:800}
 </style>
 </head>
 <body>
@@ -283,8 +296,10 @@ function closeSheet(){ $("overlay").classList.remove("show"); }
 $("sheetClose").onclick = closeSheet;
 $("overlay").onclick = e => { if(e.target===$("overlay")) closeSheet(); };
 
-function openCat(c){
-  if(c[3]==="games") return openGames();
+async function openCat(c){
+  if(c[3]==="games") return openTree("الألعاب");
+  if(!tree.length) await loadTree();
+  if(rootFor(c[0])) return openTree(c[0]);
   let h = '<div class="note">الأسعار تُرسل عبر واتساب أو تيليجرام</div>';
   c[2].forEach(g=>{
     h += '<div class="group">'+esc(g[0])+'</div><div class="items">';
@@ -302,10 +317,11 @@ function openCat(c){
 let pg = {stack:[]}, tree = [], prodCount = {};
 async function loadTree(){
   if(!sb) return;
-  const [c,p] = await Promise.all([sb.from("categories").select("id,parent_id,name,image,soon").eq("active",true).order("sort").order("id"), sb.from("products").select("category_id").eq("active",true).eq("avail",true)]);
+  const [c,p] = await Promise.all([sb.from("categories").select("id,parent_id,name,image,soon,supplier_id").eq("active",true).order("sort").order("id"), sb.from("products").select("category_id").eq("active",true).eq("avail",true)]);
   tree = c.data||[]; prodCount = {};
   (p.data||[]).forEach(x=>{ if(x.category_id) prodCount[x.category_id]=(prodCount[x.category_id]||0)+1; });
 }
+function imgOf(id){ let c = tree.find(x=>x.id===id); while(c){ if(c.image) return c.image; c = tree.find(x=>x.id===c.parent_id); } return null; }
 function tileEl(item, icon, onclick){
   const b = document.createElement("button");
   b.className = "tile"+(item.off?" off":"");
@@ -316,45 +332,69 @@ function tileEl(item, icon, onclick){
 async function openContact(cat){
   const title = cat.name;
   openSheet(title,
-    '<div id="prods"></div><div class="note">للطلب أو معرفة السعر تواصل معنا</div><div class="items">'+
+    '<div id="prods"></div><div id="contact" style="display:none"><div class="note">للطلب أو معرفة السعر تواصل معنا</div><div class="items">'+
     '<a class="buy wa" style="padding:13px" target="_blank" rel="noopener" href="'+waLink(title)+'">تواصل عبر واتساب</a>'+
-    '<a class="buy tg" style="padding:13px" target="_blank" rel="noopener" href="'+TG_CHANNEL+'">تيليجرام</a></div>');
-  if(!sb) return;
+    '<a class="buy tg" style="padding:13px" target="_blank" rel="noopener" href="'+TG_CHANNEL+'">تيليجرام</a></div></div>');
+  const showContact = ()=>{ if($("contact")) $("contact").style.display = ""; };
+  if(!sb) return showContact();
   const {data} = await sb.from("products").select("id,name,price,qty_min,qty_max").eq("category_id", cat.id).eq("active", true).eq("avail", true).order("sort").order("id");
-  if(!data || !data.length || !$("prods")) return;
-  $("prods").innerHTML = '<label class="field">رقم اللاعب (ID)<input id="pid" dir="ltr" placeholder="اكتب الـ ID هنا"></label><div class="items">'+
-    data.map(p=>'<div class="item"><div><div class="name">'+esc(p.name)+'</div><small style="color:var(--muted)">'+money(p.price)+(p.qty_max>p.qty_min?' للوحدة':'')+'</small></div>'+(p.qty_max>p.qty_min?'<input type="number" data-q="'+p.id+'" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'" style="width:80px;margin:0 8px">':'')+'<button class="buy wa" data-p="'+p.id+'" data-pr="'+p.price+'">شراء</button></div>').join("")+'</div>';
-  $("prods").querySelectorAll("[data-p]").forEach(b=>b.onclick=async()=>{
-    if(!me){ toast("سجّل دخولك أولاً"); closeSheet(); openAuth(); return; }
-    const pid = $("pid").value.trim();
-    if(!pid){ toast("اكتب رقم اللاعب أولاً"); return; }
-    const qi = $("prods").querySelector('[data-q="'+b.dataset.p+'"]'), qty = qi ? Math.max(1, parseInt(qi.value)||1) : 1;
-    if(!confirm("تأكيد الشراء؟ سيتم خصم "+money(+b.dataset.pr*qty)+" من رصيدك.")) return;
-    b.disabled = true;
-    const {error} = await sb.rpc("buy_product", {p_product:+b.dataset.p, p_player:pid, p_qty:qty});
-    b.disabled = false;
-    if(error){ toast(errAr(error.message)); return; }
-    await loadMe(); closeSheet(); toast("تم إرسال طلبك، رصيدك: "+money(me.balance));
+  if(!data || !data.length){ showContact(); return; }
+  if(!$("prods")) return;
+  const img = imgOf(cat.id);
+  $("prods").innerHTML = '<div class="pgrid">'+data.map(p=>'<button class="pcard" data-p="'+p.id+'"><div class="pimg">'+(img?'<img src="'+esc(img)+'" alt="">':'🎮')+'</div><div class="pn">'+esc(p.name)+'</div><div class="pp">'+money(p.price)+(p.qty_max>p.qty_min?' للوحدة':'')+'</div></button>').join("")+'</div><div id="buybox"></div>';
+  $("prods").querySelectorAll(".pcard").forEach(c=>c.onclick=()=>{
+    const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
+    $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
+    $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b><label class="field">رقم اللاعب (ID)<input id="pid" dir="ltr" placeholder="اكتب الـ ID هنا"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
+    const qtyNow = ()=> ranged ? Math.min(p.qty_max, Math.max(p.qty_min, parseInt($("pq").value)||p.qty_min)) : 1;
+    const upd = ()=>{ $("tot").textContent = "الإجمالي: "+money(p.price*qtyNow()); };
+    if(ranged) $("pq").oninput = upd;
+    upd();
+    $("buybox").scrollIntoView({behavior:"smooth", block:"nearest"});
+    $("goBuy").onclick = async ()=>{
+      if(!me){ toast("سجّل دخولك أولاً"); closeSheet(); openAuth(); return; }
+      const pid = $("pid").value.trim();
+      if(!pid){ toast("اكتب رقم اللاعب أولاً"); return; }
+      const qty = qtyNow();
+      if(!confirm("تأكيد الشراء؟ سيتم خصم "+money(p.price*qty)+" من رصيدك.")) return;
+      const b = $("goBuy"); b.disabled = true;
+      const {error} = await sb.rpc("buy_product", {p_product:p.id, p_player:pid, p_qty:qty});
+      b.disabled = false;
+      if(error){ toast(errAr(error.message)); return; }
+      await loadMe(); closeSheet(); toast("تم إرسال طلبك، رصيدك: "+money(me.balance));
+    };
   });
 }
+const norm = t => (t||"").toLowerCase().replace(/[\u0640\u064B-\u065F]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim();
+const ALIAS = {"الألعاب":["العاب"],"التطبيقات":["تطبيقات"],"الأرصدة والعملات":["ارصده","عملات"],"حسابات جاهزة":["حسابات جاهز"],"السوشيال ميديا":["سوشل","سوشيال"],"البطاقات":["بطاقات"],"اشتراكات الشاشة":["اشتراكات"],"توثيق الحسابات":["توثيق"],"أدوات السوفتوير":["سوفتوير","ادوات"],"قسم البروكسي":["بروكسي"],"الأرقام":["ارقام"],"برامج التصميم":["برامج"],"الذكاء الاصطناعي":["ذكاء"],"مزودات ADSL":["adsl"],"خدمات الفواتير":["فواتير"]};
+const rootFor = name => tree.find(c => c.parent_id===null && c.supplier_id && (ALIAS[name]||[]).some(k => norm(c.name).includes(k)));
 function renderPage(){
   const grid = $("pgGrid"); grid.innerHTML = "";
+  const top = pg.stack.length <= pg.base;
   const cur = pg.stack.length ? tree.find(c=>c.id===pg.stack[pg.stack.length-1]) : null;
-  $("pgTitle").textContent = cur ? cur.name : "قسم الألعاب";
-  $("pgSearch").style.display = cur ? "none" : "block";
-  const q = $("pgSearch").value.trim().toLowerCase();
-  const kids = tree.filter(c => (cur ? c.parent_id===cur.id : c.parent_id===null) && (!q || c.name.toLowerCase().includes(q)));
-  if(!kids.length && !cur){ grid.innerHTML = '<div class="none">ما في نتائج</div>'; return; }
-  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:k.image, off:k.soon}, "🎮", ()=>pick(k))));
-  if(cur && kids.length && prodCount[cur.id]) grid.appendChild(tileEl({n:"كل المنتجات"}, "🛒", ()=>openContact(cur)));
+  $("pgTitle").textContent = top ? pg.title : cur.name;
+  $("pgSearch").style.display = top ? "block" : "none";
+  const q = top ? $("pgSearch").value.trim().toLowerCase() : "";
+  const legacy = () => tree.filter(c => c.parent_id===null && !c.supplier_id);
+  let kids = cur ? tree.filter(c=>c.parent_id===cur.id) : legacy();
+  if(cur && pg.games && pg.stack.length===1) kids = kids.concat(legacy());
+  kids = kids.filter(c => !q || c.name.toLowerCase().includes(q));
+  if(!kids.length && !(cur && prodCount[cur.id])){ grid.innerHTML = '<div class="none">ما في نتائج</div>'; return; }
+  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:imgOf(k.id), off:k.soon}, "🎮", ()=>pick(k))));
+  if(cur && prodCount[cur.id]) grid.appendChild(tileEl({n:"كل المنتجات"}, "🛒", ()=>openContact(cur)));
 }
 function pick(k){
   if(tree.some(c=>c.parent_id===k.id)){ pg.stack.push(k.id); renderPage(); $("page").scrollTop = 0; }
   else openContact(k);
 }
-async function openGames(){ pg = {stack:[]}; $("pgSearch").value = ""; $("page").classList.add("show"); await loadTree(); renderPage(); $("page").scrollTop = 0; }
+async function openTree(name){
+  await loadTree();
+  const root = rootFor(name);
+  pg = {stack: root ? [root.id] : [], base: root ? 1 : 0, title: name, games: name==="الألعاب"};
+  $("pgSearch").value = ""; $("page").classList.add("show"); renderPage(); $("page").scrollTop = 0;
+}
 $("pgBack").onclick = ()=>{
-  if(pg.stack.length){ pg.stack.pop(); renderPage(); }
+  if(pg.stack.length > pg.base){ pg.stack.pop(); renderPage(); }
   else $("page").classList.remove("show");
 };
 $("pgSearch").addEventListener("input", renderPage);
@@ -455,7 +495,15 @@ $("mAbout").onclick = ()=>{ toggleMenu(false); openAbout(); };
 $("mLogin").onclick = ()=>{ toggleMenu(false); openAuth(); };
 $("loginBtn").onclick = openAuth;
 document.addEventListener("click", e => { if(!e.target.closest("#menu") && !e.target.closest("#menuBtn")) toggleMenu(false); });
-$("fab").onclick = ()=>window.open(waLink("استفسار"), "_blank");
+(function(){
+  const m = document.createElement("div"); m.className = "fabmenu";
+  const L = [["💬","واتساب","https://wa.me/"+WA_MAIN],["💬","واتساب 2","https://wa.me/"+WA_SECOND],["📢","قناة واتساب",WA_CHANNEL],["✈️","تيليجرام",TG_CHANNEL]];
+  m.innerHTML = L.map(x=>'<a href="'+x[2]+'" target="_blank" rel="noopener"><i>'+x[0]+'</i><b>'+x[1]+'</b></a>').join("");
+  document.body.appendChild(m);
+  const close = ()=>{ m.classList.remove("show"); $("fab").textContent = "💬"; };
+  $("fab").onclick = e=>{ e.stopPropagation(); const o = m.classList.toggle("show"); $("fab").textContent = o ? "✕" : "💬"; };
+  document.addEventListener("click", e=>{ if(m.classList.contains("show") && !m.contains(e.target)) close(); });
+})();
 
 function applyTheme(t){
   document.documentElement.dataset.theme = t;

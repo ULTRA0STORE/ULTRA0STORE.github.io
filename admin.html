@@ -45,6 +45,13 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ST = {pending:"قيد التنفيذ", done:"تم", rejected:"مرفوض"};
 let tabName = "users", usersCache = [], catsCache = [];
+const orderTail = o => {
+  const note = o.note ? '<div class="muted" dir="auto" style="'+(o.status==="pending"?'color:#ff8a8a':'')+'">'+esc(o.note)+'</div>' : '';
+  if(o.status!=="pending") return note;
+  const rej = '<button class="gray" data-o="'+o.id+'" data-s="rejected">رفض + استرجاع</button>';
+  if(o.supplier_product_id) return o.note ? note+'<div style="margin-top:8px">'+rej+'</div>' : '<div class="muted">تلقائي: بانتظار المزوّد</div>';
+  return '<div class="two" style="margin-top:8px"><button data-o="'+o.id+'" data-s="done">تم التنفيذ</button>'+rej+'</div>';
+};
 const pathOf = id => { const c = catsCache.find(x=>x.id==id); return c ? (c.parent_id ? pathOf(c.parent_id)+" > " : "")+c.name : ""; };
 const catOpts = root => (root?'<option value="">قسم رئيسي (بدون أب)</option>':'<option value="">اختر القسم</option>')+catsCache.map(c=>'<option value="'+c.id+'">'+esc(pathOf(c.id))+'</option>').join("");
 
@@ -94,13 +101,13 @@ async function render(){
     };
   }
   if(tabName==="orders"){
-    const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,profiles(email)").order("id",{ascending:false}).limit(100);
+    const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,supplier_product_id,note,profiles(email)").order("id",{ascending:false}).limit(100);
     if(error) return fail(error);
     v.innerHTML = data.map(o=>
       '<div class="card"><div class="row"><b>#'+o.id+' — '+esc(o.product_name)+'</b><span class="st">'+ST[o.status]+'</span></div>'+
       '<div class="muted">'+esc(o.game)+' • '+Number(o.price).toFixed(2)+' $ • <span dir="ltr">'+esc(o.profiles&&o.profiles.email)+'</span></div>'+
       '<div class="muted">ID اللاعب: <b dir="ltr">'+esc(o.player_id||"-")+'</b> • '+new Date(o.created_at).toLocaleString("ar")+'</div>'+
-      (o.status==="pending"?'<div class="two" style="margin-top:8px"><button data-o="'+o.id+'" data-s="done">تم التنفيذ</button><button class="gray" data-o="'+o.id+'" data-s="rejected">رفض + استرجاع</button></div>':'')+'</div>').join("") || '<div class="muted">لا توجد طلبات</div>';
+      orderTail(o)+'</div>').join("") || '<div class="muted">لا توجد طلبات</div>';
     v.querySelectorAll("[data-o]").forEach(b=>b.onclick=async()=>{
       if(b.dataset.s==="rejected" && !confirm("رفض الطلب وإرجاع الرصيد؟")) return;
       const {error} = await sb.rpc("admin_set_order",{p_order:+b.dataset.o, p_status:b.dataset.s});
@@ -119,7 +126,7 @@ async function render(){
     if(error) return fail(error);
     catsCache = data;
     v.innerHTML = '<div class="card"><b>إضافة قسم</b><select id="cp">'+catOpts(true)+'</select><input id="cn" placeholder="اسم القسم"><input id="ci" dir="ltr" placeholder="رابط الصورة (اختياري)"><button id="cadd" style="width:100%">إضافة</button></div>'+
-      data.map(c=>'<div class="card row"><div><b>'+esc(pathOf(c.id))+'</b>'+(c.active?'':'<div class="muted">مخفي</div>')+'</div><div><button class="gray" data-ct="'+c.id+'" data-a="'+c.active+'">'+(c.active?'إخفاء':'إظهار')+'</button> <button class="gray" data-cd="'+c.id+'">حذف</button></div></div>').join("");
+      data.map(c=>'<div class="card row"><div><b>'+esc(pathOf(c.id))+'</b>'+(c.active?'':'<div class="muted">مخفي</div>')+'</div><div><button class="gray" data-ci="'+c.id+'">صورة</button> <button class="gray" data-ct="'+c.id+'" data-a="'+c.active+'">'+(c.active?'إخفاء':'إظهار')+'</button> <button class="gray" data-cd="'+c.id+'">حذف</button></div></div>').join("");
     $("cadd").onclick = async ()=>{
       if(!$("cn").value.trim()) return alert("اكتب اسم القسم");
       const {error} = await sb.from("categories").insert({parent_id:$("cp").value||null, name:$("cn").value.trim(), image:$("ci").value.trim()||null});
@@ -127,6 +134,11 @@ async function render(){
     };
     v.querySelectorAll("[data-ct]").forEach(b=>b.onclick=async()=>{
       const {error} = await sb.from("categories").update({active: b.dataset.a!=="true"}).eq("id", b.dataset.ct);
+      if(error) return fail(error); render();
+    });
+    v.querySelectorAll("[data-ci]").forEach(b=>b.onclick=async()=>{
+      const u = prompt("الصق رابط الصورة (فاضي = حذف الصورة)"); if(u===null) return;
+      const {error} = await sb.from("categories").update({image:u.trim()||null}).eq("id", b.dataset.ci);
       if(error) return fail(error); render();
     });
     v.querySelectorAll("[data-cd]").forEach(b=>b.onclick=async()=>{
