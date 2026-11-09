@@ -175,6 +175,7 @@ body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   <button class="mi" id="mInstall">تثبيت التطبيق</button>
   <button class="mi" id="mAbout">من نحن</button>
   <button class="mi" id="mLogin">تسجيل الدخول</button>
+  <a class="mi" id="mAdmin" href="admin.html" style="display:none">لوحة الإدارة</a>
   <a class="mi" id="mWa" target="_blank" rel="noopener">واتساب</a>
   <a class="mi" id="mTg" target="_blank" rel="noopener">قناة تيليجرام</a>
 </nav>
@@ -467,7 +468,7 @@ async function loadMe(){
   if(sb){
     const {data:{session}} = await sb.auth.getSession();
     if(session){
-      const {data} = await sb.from("profiles").select("id,email,balance").eq("id", session.user.id).single();
+      const {data} = await sb.from("profiles").select("id,email,balance,is_admin").eq("id", session.user.id).single();
       me = data || {id:session.user.id, email:session.user.email, balance:0};
     }
   }
@@ -477,6 +478,7 @@ function refreshUser(){
   $("loginBtn").textContent = me ? money(me.balance) : "تسجيل الدخول";
   $("mLogin").textContent = me ? "حسابي" : "تسجيل الدخول";
   if($("navAcc")) $("navAcc").textContent = me ? "حسابي" : "دخول";
+  if($("mAdmin")) $("mAdmin").style.display = (me && me.is_admin) ? "" : "none";
 }
 async function openAuth(){
   if(!sb){ openSheet("الحساب", '<div class="note">نظام الحسابات غير مفعّل بعد.</div>'); return; }
