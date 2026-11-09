@@ -33,7 +33,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
   <button id="go" style="width:100%">دخول</button>
 </div>
 <div id="app" style="display:none">
-  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sup">المزوّد</button></div>
+  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sup">المزوّد</button><button data-t="deps">الإيداعات</button></div>
   <div id="view"></div>
   <button class="gray" id="out" style="margin-top:10px">تسجيل الخروج</button>
 </div>
@@ -120,6 +120,26 @@ async function render(){
     $("mgs").onclick = async ()=>{ const {error} = await sb.from("settings").upsert({key:"margin", value:String(+$("mg").value||0)}); if(error) return fail(error); alert("تم الحفظ، بتطبق عند التحديث القادم"); };
     const run = async (job,btn)=>{ btn.disabled = true; $("sres").textContent = "جاري التنفيذ..."; const {data,error} = await sb.functions.invoke("sync",{body:{job}}); btn.disabled = false; $("sres").textContent = error ? ("خطأ: "+error.message) : JSON.stringify(data); };
     $("s1").onclick = ()=>run("products",$("s1")); $("s2").onclick = ()=>run("orders",$("s2"));
+  }
+  if(tabName==="deps"){
+    const [r, rt] = await Promise.all([
+      sb.from("deposits").select("id,amount_syp,amount_usd,status,tx_ref,proof_url,created_at,profiles(email),deposit_methods(name)").order("id",{ascending:false}).limit(60),
+      sb.from("settings").select("value").eq("key","syp_rate").maybeSingle()
+    ]);
+    if(r.error) return fail(r.error);
+    const L = {pending:"بانتظار تحويل الزبون", review:"بانتظار المراجعة", done:"مقبول", rejected:"مرفوض", cancelled:"ملغاة", expired:"منتهية"};
+    v.innerHTML = '<div class="card"><b>سعر الصرف (ل.س مقابل 1$)</b><input id="rt" type="number" step="0.01" value="'+(rt.data?rt.data.value:147)+'"><button id="rts" style="width:100%">حفظ السعر</button></div>'+
+      (r.data.length ? r.data.map(d=>'<div class="card"><b>#'+d.id+' — '+esc(d.deposit_methods?d.deposit_methods.name:"")+'</b> <span class="muted">'+L[d.status]+'</span><div class="muted">'+esc(d.profiles?d.profiles.email:"")+' • '+Number(d.amount_syp)+' SYP = $'+Number(d.amount_usd).toFixed(3)+'</div><div class="muted" dir="auto">رقم العملية: '+esc(d.tx_ref||"—")+' • '+new Date(d.created_at).toLocaleString("ar")+'</div>'+(d.proof_url?'<div style="margin-top:8px"><button class="gray" data-p="'+esc(d.proof_url)+'">عرض إثبات الدفع</button></div>':'')+(d.status==="review"?'<div class="two" style="margin-top:8px"><button data-d="'+d.id+'" data-s="done">قبول + إضافة الرصيد</button><button class="gray" data-d="'+d.id+'" data-s="rejected">رفض</button></div>':'')+'</div>').join("") : '<div class="muted">لا يوجد طلبات إيداع بعد</div>');
+    $("rts").onclick = async ()=>{ const {error} = await sb.from("settings").upsert({key:"syp_rate", value:String(+$("rt").value||147)}); if(error) return fail(error); alert("تم حفظ سعر الصرف"); };
+    v.querySelectorAll("[data-p]").forEach(b=>b.onclick=async()=>{
+      const {data,error} = await sb.storage.from("proofs").createSignedUrl(b.dataset.p, 300);
+      if(error) return fail(error); window.open(data.signedUrl, "_blank");
+    });
+    v.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{
+      if(b.dataset.s==="done" && !confirm("تأكدت إنو التحويل وصل لحسابك؟ سيضاف الرصيد للزبون.")) return;
+      const {error} = await sb.rpc("admin_set_deposit", {p_id:+b.dataset.d, p_status:b.dataset.s});
+      if(error) return fail(error); render();
+    });
   }
   if(tabName==="cats"){
     const {data,error} = await sb.from("categories").select("*").order("sort").order("id");
