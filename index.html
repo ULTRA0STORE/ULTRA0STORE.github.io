@@ -156,14 +156,30 @@ body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .ring .tt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.ring .tt b{font-size:38px;font-weight:900}.ring .tt small{color:var(--muted)}
 .dcard input#dTx{width:100%;box-sizing:border-box;background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:15px;color:var(--text);font-size:16px;font-family:inherit;outline:none}
 .proof{display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);border-radius:16px;padding:14px;margin-top:10px;color:var(--text);cursor:pointer;font-weight:700;font-size:14px;text-align:center}
+
+.icon-btn{display:flex;align-items:center;justify-content:center;position:relative}
+.icon-btn svg{width:20px;height:20px}
+.bdg{position:absolute;top:-5px;left:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--main2);color:#fff;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px;line-height:1}
+.ico,.pimg{color:#fff}
+.ico svg,.pimg svg{width:1.1em;height:1.1em}
+.fab{display:flex;align-items:center;justify-content:center}
+.fab svg{width:26px;height:26px}
+.fabmenu i{display:flex}
+.bnav button i{display:flex;align-items:center;justify-content:center}
+.bnav button i svg{width:22px;height:22px}
+.bnav .home i svg{width:24px;height:24px}
+.pwabar .pi svg{width:16px;height:16px;vertical-align:-3px;margin-inline-end:4px}
+.linkbtn{background:none;border:0;color:var(--main2);font-weight:700;font-size:13px;margin:0 0 10px;padding:0;display:block}
+.linkbtn:disabled{opacity:.5}
 </style>
 </head>
 <body>
 
 <header>
   <div class="hbtns">
-    <button class="icon-btn" id="menuBtn" aria-label="القائمة">☰</button>
-    <button class="icon-btn" id="themeBtn" aria-label="الوضع">☀</button>
+    <button class="icon-btn" id="menuBtn" aria-label="القائمة"></button>
+    <button class="icon-btn" id="bellBtn" aria-label="الإشعارات"></button>
+    <button class="icon-btn" id="themeBtn" aria-label="الوضع"></button>
   </div>
   <div class="logo">ULTRA0</div>
   <button class="login" id="loginBtn">تسجيل الدخول</button>
@@ -185,7 +201,7 @@ body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   <div class="dots" id="dots"></div>
 </section>
 
-<div class="ticker"><span>✨ أهلاً وسهلاً بكم في متجر ULTRA0 STORE — حيث ستجد أفضل الخدمات وأفضل الأسعار — الـتـرا قـريـبـاً لـلـعـالـمـيـه ⚡</span></div>
+<div class="ticker"><span>أهلاً وسهلاً بكم في متجر ULTRA0 STORE — حيث ستجد أفضل الخدمات وأفضل الأسعار — الـتـرا قـريـبـاً لـلـعـالـمـيـه</span></div>
 
 <div class="social" id="social"></div>
 
@@ -196,7 +212,7 @@ body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 
 <footer>ULTRA0 STORE 2026© — جميع الحقوق محفوظة</footer>
 
-<button class="fab" id="fab" aria-label="واتساب">💬</button>
+<button class="fab" id="fab" aria-label="واتساب"></button>
 <div class="toast" id="toast"></div>
 
 <div class="page" id="page">
@@ -216,7 +232,7 @@ body{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 
 <div class="overlay mid" id="popup">
   <div class="sheet pop">
-    <h2>أهلاً وسهلاً بكم في ULTRA0 STORE ✨</h2>
+    <h2>أهلاً وسهلاً بكم في ULTRA0 STORE</h2>
     <p>يجب على الجميع الانضمام إلى قناة المتجر على تيليجرام لمتابعة العروض والأسعار والإشعارات المهمة.</p>
     <a class="buy wa" id="popTg" target="_blank" rel="noopener">انضم إلى قناة تيليجرام</a>
     <button class="buy tg" id="popClose" style="width:100%;margin-top:8px;padding:12px;font-size:15px">إغلاق</button>
@@ -232,6 +248,37 @@ const WA_CHANNEL = "https://whatsapp.com/channel/0029VbDR6zHBFLgdAaMDpv0H";
 const TG_CHANNEL = "https://t.me/ULTRA0STORE";
 const IG = "https://www.instagram.com/ultr3_st0re_0";
 
+const svg = p => '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+const IC = {
+  game: svg('<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="15.5" cy="11" r=".7"/><circle cx="18" cy="13" r=".7"/>'),
+  phone: svg('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
+  wallet: svg('<path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 13.5h2"/>'),
+  user: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'),
+  mega: svg('<path d="M3 11v2a1 1 0 0 0 1 1h3l8 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M18 9a4 4 0 0 1 0 6"/>'),
+  card: svg('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'),
+  tv: svg('<rect x="2" y="5" width="20" height="13" rx="2"/><path d="M8 21h8M12 18v3"/>'),
+  check: svg('<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>'),
+  tool: svg('<path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3z"/><path d="M14.7 6.3 17 4"/>'),
+  globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
+  call: svg('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'),
+  palette: svg('<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2.2-.5-1.3.3-2.8 1.8-2.8H18a3 3 0 0 0 3-3c0-5-4-10-9-10z"/><circle cx="7.5" cy="11" r=".8"/><circle cx="10" cy="7" r=".8"/><circle cx="15" cy="7.5" r=".8"/>'),
+  bot: svg('<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 14h.01M15 14h.01M2 13v3M22 13v3"/>'),
+  wifi: svg('<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r=".8"/>'),
+  receipt: svg('<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+  menu: svg('<path d="M4 7h16M4 12h16M4 17h16"/>'),
+  sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>'),
+  moon: svg('<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>'),
+  chat: svg('<path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/>'),
+  close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
+  send: svg('<path d="M21 3 3 10.5l6 2.5 2.5 6L21 3z"/><path d="M9 13l6-5"/>'),
+  cart: svg('<circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h3l3 12h10l3-8H6"/>'),
+  box: svg('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
+  home: svg('<path d="M3 11 12 3l9 8M5 10v10h5v-6h4v6h5V10"/>'),
+  dl: svg('<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>'),
+  bell: svg('<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/>')
+};
+
+
 const slides = [
   {t:"ULTRA0 STORE", s:"وجهتك لشحن الألعاب والخدمات الرقمية"},
   {t:"الـتـرا قـريـبـاً لـلـعـالـمـيـه", s:"ULTRA0 STORE", href:"https://wa.me/"+WA_MAIN},
@@ -241,21 +288,21 @@ const slides = [
 
 /* [الاسم, الأيقونة, [[عنوان المجموعة, [المنتجات]], ...]] — عدّل المنتجات متل ما بدك */
 const cats = [
-  ["الألعاب","🎮",null,"games"],
-  ["التطبيقات","📱",[["تطبيقات",["Bigo Live","TikTok Coins","Likee","Soulchill"]]]],
-  ["الأرصدة والعملات","💰",[["أرصدة",["رصيد سيرياتيل","رصيد MTN"]],["عملات رقمية",["USDT","Bitcoin"]]]],
-  ["حسابات جاهزة","👤",[["حسابات",["حسابات ألعاب","حسابات سوشيال"]]]],
-  ["السوشيال ميديا","📣",[["خدمات",["متابعين انستغرام","لايكات تيك توك","مشاهدات يوتيوب"]]]],
-  ["البطاقات","💳",[["بطاقات",["فيزا افتراضية","Google Play","iTunes","Steam"]]]],
-  ["اشتراكات الشاشة","📺",[["اشتراكات",["Netflix","Shahid VIP","IPTV"]]]],
-  ["توثيق الحسابات","✅",[["توثيق",["توثيق انستغرام","توثيق تيك توك"]]]],
-  ["أدوات السوفتوير","🛠️",[["أدوات",["أدوات فك","أدوات صيانة"]]]],
-  ["قسم البروكسي","🌐",[["بروكسي",["بروكسي ثابت","بروكسي مؤقت"]]]],
-  ["الأرقام","☎️",[["أرقام",["أرقام واتساب","أرقام تيليجرام"]]]],
-  ["برامج التصميم","🖌️",[["برامج",["Canva Pro","Adobe","CapCut Pro"]]]],
-  ["الذكاء الاصطناعي","🤖",[["اشتراكات",["ChatGPT Plus","Claude Pro","Gemini"]]]],
-  ["مزودات ADSL","📡",[["مزودات",["تجديد اشتراك ADSL"]]]],
-  ["خدمات الفواتير","🧾",[["فواتير",["دفع فواتير"]]]]
+  ["الألعاب",IC.game,null,"games"],
+  ["التطبيقات",IC.phone,[["تطبيقات",["Bigo Live","TikTok Coins","Likee","Soulchill"]]]],
+  ["الأرصدة والعملات",IC.wallet,[["أرصدة",["رصيد سيرياتيل","رصيد MTN"]],["عملات رقمية",["USDT","Bitcoin"]]]],
+  ["حسابات جاهزة",IC.user,[["حسابات",["حسابات ألعاب","حسابات سوشيال"]]]],
+  ["السوشيال ميديا",IC.mega,[["خدمات",["متابعين انستغرام","لايكات تيك توك","مشاهدات يوتيوب"]]]],
+  ["البطاقات",IC.card,[["بطاقات",["فيزا افتراضية","Google Play","iTunes","Steam"]]]],
+  ["اشتراكات الشاشة",IC.tv,[["اشتراكات",["Netflix","Shahid VIP","IPTV"]]]],
+  ["توثيق الحسابات",IC.check,[["توثيق",["توثيق انستغرام","توثيق تيك توك"]]]],
+  ["أدوات السوفتوير",IC.tool,[["أدوات",["أدوات فك","أدوات صيانة"]]]],
+  ["قسم البروكسي",IC.globe,[["بروكسي",["بروكسي ثابت","بروكسي مؤقت"]]]],
+  ["الأرقام",IC.call,[["أرقام",["أرقام واتساب","أرقام تيليجرام"]]]],
+  ["برامج التصميم",IC.palette,[["برامج",["Canva Pro","Adobe","CapCut Pro"]]]],
+  ["الذكاء الاصطناعي",IC.bot,[["اشتراكات",["ChatGPT Plus","Claude Pro","Gemini"]]]],
+  ["مزودات ADSL",IC.wifi,[["مزودات",["تجديد اشتراك ADSL"]]]],
+  ["خدمات الفواتير",IC.receipt,[["فواتير",["دفع فواتير"]]]]
 ];
 
 /* ===== الألعاب =====
@@ -298,6 +345,7 @@ $("social").innerHTML =
 $("mWa").href = "https://wa.me/"+WA_MAIN;
 $("mTg").href = TG_CHANNEL;
 $("popTg").href = TG_CHANNEL;
+$("menuBtn").innerHTML = IC.menu; $("fab").innerHTML = IC.chat; $("bellBtn").innerHTML = IC.bell+'<span class="bdg" id="bellN"></span>';
 
 /* ===== السلايدر ===== */
 const track = $("track"), dots = $("dots");
@@ -386,7 +434,7 @@ async function openContact(cat){
   if(!data || !data.length){ showContact(); return; }
   if(!$("prods")) return;
   const img = imgOf(cat.id);
-  $("prods").innerHTML = '<div class="pgrid">'+data.map(p=>'<button class="pcard" data-p="'+p.id+'"><div class="pimg">'+(img?'<img src="'+esc(img)+'" alt="">':'🎮')+'</div><div class="pn">'+esc(p.name)+'</div><div class="pp">'+money(p.price)+(p.qty_max>p.qty_min?' للوحدة':'')+'</div></button>').join("")+'</div><div id="buybox"></div>';
+  $("prods").innerHTML = '<div class="pgrid">'+data.map(p=>'<button class="pcard" data-p="'+p.id+'"><div class="pimg">'+(img?'<img src="'+esc(img)+'" alt="">':IC.game)+'</div><div class="pn">'+esc(p.name)+'</div><div class="pp">'+money(p.price)+(p.qty_max>p.qty_min?' للوحدة':'')+'</div></button>').join("")+'</div><div id="buybox"></div>';
   $("prods").querySelectorAll(".pcard").forEach(c=>c.onclick=()=>{
     const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
     $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
@@ -425,8 +473,8 @@ function renderPage(){
   if(cur && pg.games && pg.stack.length===1) kids = kids.concat(legacy());
   kids = kids.filter(c => !q || c.name.toLowerCase().includes(q));
   if(!kids.length && !(cur && prodCount[cur.id])){ grid.innerHTML = '<div class="none">ما في نتائج</div>'; return; }
-  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:imgOf(k.id), off:k.soon}, "🎮", ()=>pick(k))));
-  if(cur && prodCount[cur.id]) grid.appendChild(tileEl({n:"كل المنتجات"}, "🛒", ()=>openContact(cur)));
+  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:imgOf(k.id), off:k.soon}, IC.game, ()=>pick(k))));
+  if(cur && prodCount[cur.id]) grid.appendChild(tileEl({n:"كل المنتجات"}, IC.cart, ()=>openContact(cur)));
 }
 function pick(k){
   if(tree.some(c=>c.parent_id===k.id)){ pg.stack.push(k.id); renderPage(); $("page").scrollTop = 0; }
@@ -446,7 +494,7 @@ $("pgSearch").addEventListener("input", renderPage);
 
 function openAbout(){
   openSheet("من نحن",
-    '<div class="note">ULTRA0 STORE متجر لشحن الألعاب والتطبيقات والبطاقات الرقمية والخدمات. اختر القسم وتواصل معنا لتأكيد الطلب. الـتـرا قـريـبـاً لـلـعـالـمـيـه.</div>'+
+    '<div class="note">نحن فريق ULTRA0-STORE نؤمن بأن تجربة الشراء يجب أن تكون بسيطة، سريعة، وآمنة. أسسنا المتجر لنكون وجهتك المفضلة لشحن الألعاب والبطاقات الرقمية، ونعمل باستمرار على تقديم أفضل الأسعار والخدمات لجميع المستخدمين في العالم العربي. نقدم لك واجهة سهلة الاستخدام، وسرعة في تنفيذ الطلبات، واهتمام حقيقي بكل عميل. رؤيتنا أن نكون منصة رائدة تلبي احتياجاتك الرقمية بكفاءة واحترافية.</div>'+
     '<div class="group">تواصل معنا</div><div class="items">'+
     '<a class="item" href="https://wa.me/'+WA_MAIN+'" target="_blank" rel="noopener"><span class="name">واتساب (الرقم الأساسي)</span><span dir="ltr">+'+WA_MAIN+'</span></a>'+
     '<a class="item" href="https://wa.me/'+WA_SECOND+'" target="_blank" rel="noopener"><span class="name">رقم التواصل</span><span dir="ltr">+'+WA_SECOND+'</span></a>'+
@@ -459,6 +507,7 @@ function openAbout(){
 const SB_URL = "https://sbzdkuyxccfyvktjhdas.supabase.co", SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiemRrdXl4Y2NmeXZrdGpoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTEzOTksImV4cCI6MjEwNzEyNzM5OX0.fuUbL4xWUndqylQXTJzCTXIY8Qd6V85pXvF40eJ5jYs";
 let sb = null, me = null;
 try{ if(!SB_URL.startsWith("PASTE") && !SB_KEY.startsWith("PASTE")) sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
+if(sb) sb.auth.onAuthStateChange(ev=>{ if(ev==="PASSWORD_RECOVERY") setTimeout(openNewPass,400); });
 const money = n => Number(n||0).toFixed(2)+" $";
 const ST = {pending:"قيد التنفيذ", done:"تم", rejected:"مرفوض"};
 const errAr = m => ({"Invalid login credentials":"البريد أو كلمة السر غير صحيحة","User already registered":"هذا البريد مسجّل مسبقاً",
@@ -479,6 +528,7 @@ function refreshUser(){
   $("mLogin").textContent = me ? "حسابي" : "تسجيل الدخول";
   if($("navAcc")) $("navAcc").textContent = me ? "حسابي" : "دخول";
   if($("mAdmin")) $("mAdmin").style.display = (me && me.is_admin) ? "" : "none";
+  loadNotifs();
 }
 async function openAuth(){
   if(!sb){ openSheet("الحساب", '<div class="note">نظام الحسابات غير مفعّل بعد.</div>'); return; }
@@ -500,7 +550,7 @@ async function openAuth(){
     '<label class="field">البريد الإلكتروني<input id="aEmail" type="email" dir="ltr" autocomplete="email" placeholder="name@example.com"></label>'+
     '<label class="field">كلمة السر<input id="aPass" type="password" dir="ltr" autocomplete="current-password"></label>'+
     '<label class="field" id="confWrap" style="display:none">تأكيد كلمة السر<input id="aConf" type="password" dir="ltr" autocomplete="new-password"></label>'+
-    '<div class="err" id="aErr"></div>'+
+    '<button type="button" class="linkbtn" id="aForgot">نسيت كلمة السر؟</button><div class="err" id="aErr"></div>'+
     '<button class="submit" id="aSubmit" type="submit">تسجيل الدخول</button></form>');
   const setMode = m => {
     mode = m;
@@ -509,9 +559,18 @@ async function openAuth(){
     $("aSubmit").textContent = m==="reg" ? "إنشاء الحساب" : "تسجيل الدخول";
     $("aPass").autocomplete = m==="reg" ? "new-password" : "current-password";
     $("aErr").textContent = "";
+    $("aForgot").style.display = m==="reg" ? "none" : "block";
   };
   $("tLogin").onclick = ()=>setMode("login");
   $("tReg").onclick = ()=>setMode("reg");
+  $("aForgot").onclick = async ()=>{
+    const email = $("aEmail").value.trim().toLowerCase(), err = $("aErr");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "اكتب بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة السر"; return; }
+    $("aForgot").disabled = true;
+    const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin+location.pathname});
+    $("aForgot").disabled = false;
+    err.textContent = error ? "تعذر الإرسال، حاول بعد قليل" : "تم إرسال رابط تغيير كلمة السر إلى بريدك، افتحه من نفس الجهاز";
+  };
   $("authForm").onsubmit = async e => {
     e.preventDefault();
     const email = $("aEmail").value.trim().toLowerCase(), pass = $("aPass").value, err = $("aErr");
@@ -534,6 +593,51 @@ async function openAuth(){
   };
 }
 
+function openNewPass(){
+  openSheet("كلمة سر جديدة",
+    '<form id="npForm" novalidate><label class="field">كلمة السر الجديدة<input id="npA" type="password" dir="ltr" autocomplete="new-password"></label>'+
+    '<label class="field">تأكيد كلمة السر<input id="npB" type="password" dir="ltr" autocomplete="new-password"></label>'+
+    '<div class="err" id="npE"></div><button class="submit" type="submit">حفظ</button></form>');
+  $("npForm").onsubmit = async e => {
+    e.preventDefault();
+    const a = $("npA").value;
+    if(a.length < 6){ $("npE").textContent = "كلمة السر لازم تكون 6 أحرف أو أكثر"; return; }
+    if(a !== $("npB").value){ $("npE").textContent = "كلمتا السر غير متطابقتين"; return; }
+    const {error} = await sb.auth.updateUser({password:a});
+    if(error){ $("npE").textContent = "تعذر الحفظ، افتح الرابط من البريد مرة ثانية"; return; }
+    closeSheet(); await loadMe(); toast("تم تغيير كلمة السر");
+  };
+}
+
+/* ===== الإشعارات ===== */
+let notifs = [];
+async function loadNotifs(){
+  if(!sb || !me){ notifs = []; updBell(); return; }
+  const [o,d] = await Promise.all([
+    sb.from("orders").select("id,product_name,status,note").eq("user_id",me.id).in("status",["done","rejected"]).order("id",{ascending:false}).limit(15),
+    sb.from("deposits").select("id,amount_usd,status").eq("user_id",me.id).in("status",["done","rejected"]).order("id",{ascending:false}).limit(15)
+  ]);
+  notifs = [];
+  (o.data||[]).forEach(x=>notifs.push({k:"o"+x.id+x.status, t:(x.status==="done"?"تم تنفيذ طلبك: ":"تم رفض طلبك: ")+x.product_name, n:x.note}));
+  (d.data||[]).forEach(x=>notifs.push({k:"d"+x.id+x.status, t:x.status==="done"?"تمت إضافة "+money(x.amount_usd)+" إلى رصيدك":"تم رفض طلب الإيداع"}));
+  if(store.get("seen_"+me.id, null) === null) store.set("seen_"+me.id, notifs.map(n=>n.k));
+  updBell();
+}
+function updBell(){
+  const b = $("bellN"); if(!b) return;
+  const seen = me ? store.get("seen_"+me.id, []) : [];
+  const n = notifs.filter(x=>!seen.includes(x.k)).length;
+  b.textContent = n>9 ? "9+" : n; b.style.display = n ? "flex" : "none";
+}
+$("bellBtn").onclick = async ()=>{
+  if(!me){ openAuth(); return; }
+  await loadNotifs();
+  const seen = store.get("seen_"+me.id, []);
+  openSheet("الإشعارات", notifs.length ? '<div class="items">'+notifs.map(n=>'<div class="item"><span class="name">'+(seen.includes(n.k)?'':'• ')+esc(n.t)+'</span></div>'+(n.n?'<div class="note" dir="auto">'+esc(n.n)+'</div>':'')).join("")+'</div>' : '<div class="note">لا يوجد إشعارات بعد</div>');
+  store.set("seen_"+me.id, notifs.map(n=>n.k).concat(seen).slice(0,300)); updBell();
+};
+setInterval(()=>{ if(me) loadNotifs(); }, 60000);
+
 /* ===== القائمة والوضع ===== */
 function toggleMenu(open){ $("menu").classList.toggle("show", open); }
 $("menuBtn").onclick = ()=>toggleMenu(true);
@@ -544,17 +648,17 @@ $("loginBtn").onclick = openAuth;
 document.addEventListener("click", e => { if(!e.target.closest("#menu") && !e.target.closest("#menuBtn")) toggleMenu(false); });
 (function(){
   const m = document.createElement("div"); m.className = "fabmenu";
-  const L = [["💬","واتساب","https://wa.me/"+WA_MAIN],["💬","واتساب 2","https://wa.me/"+WA_SECOND],["📢","قناة واتساب",WA_CHANNEL],["✈️","تيليجرام",TG_CHANNEL]];
+  const L = [[IC.chat,"واتساب","https://wa.me/"+WA_MAIN],[IC.chat,"واتساب 2","https://wa.me/"+WA_SECOND],[IC.mega,"قناة واتساب",WA_CHANNEL],[IC.send,"تيليجرام",TG_CHANNEL]];
   m.innerHTML = L.map(x=>'<a href="'+x[2]+'" target="_blank" rel="noopener"><i>'+x[0]+'</i><b>'+x[1]+'</b></a>').join("");
   document.body.appendChild(m);
-  const close = ()=>{ m.classList.remove("show"); $("fab").textContent = "💬"; };
-  $("fab").onclick = e=>{ e.stopPropagation(); const o = m.classList.toggle("show"); $("fab").textContent = o ? "✕" : "💬"; };
+  const close = ()=>{ m.classList.remove("show"); $("fab").innerHTML = IC.chat; };
+  $("fab").onclick = e=>{ e.stopPropagation(); const o = m.classList.toggle("show"); $("fab").innerHTML = o ? IC.close : IC.chat; };
   document.addEventListener("click", e=>{ if(m.classList.contains("show") && !m.contains(e.target)) close(); });
 })();
 
 function applyTheme(t){
   document.documentElement.dataset.theme = t;
-  $("themeBtn").textContent = t==="light" ? "☾" : "☀";
+  $("themeBtn").innerHTML = t==="light" ? IC.moon : IC.sun;
 }
 $("themeBtn").onclick = ()=>{
   const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
@@ -576,7 +680,7 @@ $("popClose").onclick = ()=>$("popup").classList.remove("show");
 $("popup").onclick = e => { if(e.target===$("popup")) $("popup").classList.remove("show"); };
 let seen = false;
 try{ seen = sessionStorage.getItem("popup")==="1"; }catch(e){}
-if(!seen){
+if(!seen && !location.hash.includes("type=recovery")){
   setTimeout(()=>{
     $("popup").classList.add("show");
     try{ sessionStorage.setItem("popup","1"); }catch(e){}
@@ -593,7 +697,7 @@ loadMe();
     if(!me) return openAuth();
     openSheet("رصيدي", '<div class="note">رصيدك الحالي: <b>'+money(me.balance)+'</b><br>لشحن الرصيد تواصل معنا على واتساب</div><a class="buy wa" style="display:block;padding:12px" target="_blank" rel="noopener" href="https://wa.me/'+WA_MAIN+'?text='+encodeURIComponent("مرحباً، أريد شحن رصيد على حسابي: "+me.email)+'">شحن الرصيد عبر واتساب</a>');
   };
-  const items = [["🎮","الألعاب",()=>openTree("الألعاب"),""],["📦","طلباتي",orders,""],["🏠","الرئيسية",goHome,"home"],["💳","رصيدي",wallet,""],["👤",()=>me?"حسابي":"دخول",openAuth,""]];
+  const items = [[IC.game,"الألعاب",()=>openTree("الألعاب"),""],[IC.box,"طلباتي",orders,""],[IC.home,"الرئيسية",goHome,"home"],[IC.wallet,"رصيدي",wallet,""],[IC.user,()=>me?"حسابي":"دخول",openAuth,""]];
   items.forEach(it=>{
     const b = document.createElement("button"); if(it[3]) b.className = it[3];
     b.innerHTML = '<i>'+it[0]+'</i><span'+(typeof it[1]==="function"?' id="navAcc"':'')+'>'+(typeof it[1]==="function"?it[1]():it[1])+'</span>';
@@ -608,7 +712,7 @@ loadMe();
   let dp = null, hidden = false;
   try{ hidden = localStorage.getItem("u0_pwa_x")==="1"; }catch(e){}
   const bar = document.createElement("div"); bar.className = "pwabar";
-  bar.innerHTML = '<button class="pi">📲 ثبّت التطبيق</button><button class="px" aria-label="إغلاق">✕</button>';
+  bar.innerHTML = '<button class="pi">'+IC.dl+' ثبّت التطبيق</button><button class="px" aria-label="إغلاق">✕</button>';
   document.body.appendChild(bar);
   const show = ()=>{ if(!hidden) bar.classList.add("show"); };
   addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); dp = e; show(); });
@@ -683,7 +787,7 @@ loadMe();
     const ST = {pending:["بانتظار الدفع","gold"], review:["قيد المراجعة","blue"], done:["تم الإيداع","green"], rejected:["مرفوض","red"], cancelled:["ملغاة","red"], expired:["منتهية","red"]}[d.status] || ["",""];
     const amt = String(Number(d.amount_syp));
     const timerCard = '<div class="dcard tcard"><div class="ring"><svg viewBox="0 0 120 120"><circle class="r0" cx="60" cy="60" r="54"/><circle class="r1" id="dRing" cx="60" cy="60" r="54"/></svg><div class="tt"><b id="dTime">30:00</b><small>الوقت المتبقي</small></div></div><p style="color:var(--muted)">بعد إتمام التحويل، أدخل رقم العملية قبل انتهاء الوقت.</p></div>'+
-      '<div class="dcard"><input id="dTx" dir="ltr" placeholder="رقم العملية"><label class="proof" for="dProof"><span id="dProofT">⬆ أرفق صورة إثبات الدفع</span></label><input type="file" id="dProof" accept="image/*" hidden><button class="submit" id="dDone">إتمام الطلب</button><button class="cancel" id="dCancel">إلغاء المعاملة</button></div>';
+      '<div class="dcard"><input id="dTx" dir="ltr" placeholder="رقم العملية"><label class="proof" for="dProof"><span id="dProofT">أرفق صورة إثبات الدفع</span></label><input type="file" id="dProof" accept="image/*" hidden><button class="submit" id="dDone">إتمام الطلب</button><button class="cancel" id="dCancel">إلغاء المعاملة</button></div>';
     const reviewCard = '<div class="dcard"><b>تم استلام رقم العملية</b><p style="color:var(--muted)">رقم العملية: <span dir="ltr">'+esc(d.tx_ref||"")+'</span><br>سيتم إضافة الرصيد بعد التحقق، وغالباً خلال دقائق.</p><button class="cancel" id="dClose">رجوع</button></div>';
     $("dBody").innerHTML =
       '<div class="dcard"><p class="blue">يرجى عدم مغادرة الصفحة حتى اتمام العملية</p><p>يرجى ارسال المبلغ بحيث يصلنا <b class="red">كامل المبلغ</b> المطلوب .</p></div>'+
@@ -703,7 +807,7 @@ loadMe();
       };
       tick(); timer = setInterval(tick,1000);
       proofFile = null;
-      $("dProof").onchange = e=>{ proofFile = e.target.files[0] || null; $("dProofT").textContent = proofFile ? "✅ "+proofFile.name : "⬆ أرفق صورة إثبات الدفع"; };
+      $("dProof").onchange = e=>{ proofFile = e.target.files[0] || null; $("dProofT").textContent = proofFile ? "✓ "+proofFile.name : "أرفق صورة إثبات الدفع"; };
       $("dDone").onclick = async ()=>{
         const tx = $("dTx").value.trim(); if(tx.length < 4){ toast("اكتب رقم العملية"); return; }
         const b = $("dDone"); b.disabled = true;
@@ -730,7 +834,7 @@ loadMe();
         const {data} = await sb.from("deposits").select("status").eq("id",d.id).maybeSingle();
         if(!data || data.status==="review") return;
         clr();
-        if(data.status==="done"){ await loadMe(); toast("تمت إضافة الرصيد ✅"); } else toast("تم رفض طلب الإيداع");
+        if(data.status==="done"){ await loadMe(); toast("تمت إضافة الرصيد"); } else toast("تم رفض طلب الإيداع");
         renderMethods();
       }, 15000);
     }
