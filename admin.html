@@ -33,7 +33,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
   <button id="go" style="width:100%">دخول</button>
 </div>
 <div id="app" style="display:none">
-  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sup">المزوّد</button><button data-t="deps">الإيداعات</button></div>
+  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sum">الملخص</button><button data-t="sup">المزوّد</button><button data-t="deps">الإيداعات</button></div>
   <div id="view"></div>
   <button class="gray" id="out" style="margin-top:10px">تسجيل الخروج</button>
 </div>
@@ -82,7 +82,7 @@ async function render(){
     const {data,error} = await sb.from("profiles").select("email,balance,is_admin").order("created_at",{ascending:false}).limit(300);
     if(error) return fail(error);
     usersCache = data;
-    v.innerHTML = '<div class="card"><b>إضافة رصيد</b><input id="ue" dir="ltr" placeholder="ايميل الزبون"><input id="ua" type="number" step="0.01" placeholder="المبلغ بالدولار (سالب للخصم)"><button id="uadd" style="width:100%">إضافة</button></div>'+
+    v.innerHTML = '<div class="card"><b>إضافة رصيد</b><input id="ue" dir="ltr" placeholder="ايميل الزبون"><input id="ua" type="number" step="0.01" placeholder="المبلغ بالدولار (سالب للخصم)"><button id="uadd" style="width:100%">إضافة</button><div style="height:10px"></div><input id="upw" dir="ltr" placeholder="كلمة سر جديدة للزبون (6 أحرف على الأقل)"><button id="upass" class="gray" style="width:100%">تعيين كلمة السر</button></div>'+
       '<input id="usr" placeholder="ابحث بالايميل..."><div id="ulist"></div>';
     const draw = ()=>{
       const q = $("usr").value.trim().toLowerCase();
@@ -91,6 +91,14 @@ async function render(){
       $("ulist").querySelectorAll("[data-e]").forEach(c=>c.onclick=()=>{ $("ue").value = c.dataset.e; $("ua").focus(); });
     };
     $("usr").oninput = draw; draw();
+    $("upass").onclick = async ()=>{
+      const e = $("ue").value.trim().toLowerCase(), p = $("upw").value;
+      if(!e || p.length < 6) return alert("اكتب الايميل وكلمة سر من 6 أحرف أو أكثر");
+      if(!confirm("تعيين كلمة سر جديدة للزبون "+e+" ؟")) return;
+      const {data,error} = await sb.functions.invoke("sync",{body:{job:"setpass", email:e, password:p}});
+      if(error || (data && data.error)) return alert("تعذّر: "+(data && data.error ? data.error : error.message));
+      $("upw").value = ""; alert("تم تعيين كلمة السر. أرسلها للزبون.");
+    };
     $("uadd").onclick = async ()=>{
       const a = parseFloat($("ua").value);
       if(!$("ue").value.trim() || !isFinite(a) || a===0) return alert("اكتب الايميل والمبلغ");
@@ -140,6 +148,25 @@ async function render(){
       const {error} = await sb.rpc("admin_set_deposit", {p_id:+b.dataset.d, p_status:b.dataset.s});
       if(error) return fail(error); render();
     });
+  }
+  if(tabName==="sum"){
+    const since = new Date(Date.now()-30*86400000);
+    const [o, st] = await Promise.all([
+      sb.from("orders").select("price,qty,status,created_at,products(supplier_price)").gte("created_at",since.toISOString()).limit(5000),
+      sb.from("settings").select("key,value").in("key",["supplier_balance","supplier_balance_at","low_balance"])
+    ]);
+    if(o.error) return fail(o.error);
+    const S = {}; (st.data||[]).forEach(x=>S[x.key]=x.value);
+    const bal = S.supplier_balance!=null ? parseFloat(S.supplier_balance) : null, th = parseFloat(S.low_balance!=null?S.low_balance:"5");
+    const t0 = new Date(); t0.setHours(0,0,0,0);
+    const per = from=>{ const r = {n:0,sales:0,profit:0}; (o.data||[]).forEach(x=>{ if(new Date(x.created_at) < from) return; r.n++; if(x.status==="done"){ const p = Number(x.price)||0; r.sales += p; const sp = x.products && x.products.supplier_price!=null ? Number(x.products.supplier_price)*(x.qty||1) : null; if(sp!=null) r.profit += p-sp; } }); return r; };
+    const rows = [["اليوم",per(t0)],["آخر 7 أيام",per(new Date(Date.now()-7*86400000))],["آخر 30 يوم",per(since)]];
+    v.innerHTML = '<div class="card"><b>رصيدك عند المزوّد</b><div style="font-size:32px;font-weight:900;margin:6px 0;color:'+(bal!=null && bal<th ? '#ff6b6b' : '#10d98a')+'">'+(bal!=null ? '$'+bal.toFixed(2) : '—')+'</div><div class="muted">'+(S.supplier_balance_at ? 'آخر تحديث: '+new Date(S.supplier_balance_at).toLocaleString("ar") : 'لم يتم التحديث بعد')+'</div><div style="height:8px"></div><button id="bref" style="width:100%">تحديث الرصيد الآن</button><div class="muted" id="bmsg"></div></div>'+
+      '<div class="card"><b>حد التنبيه ($)</b><input id="bth" type="number" step="0.5" value="'+th+'"><button id="bths" class="gray" style="width:100%">حفظ الحد</button><div class="muted">بيوصلك تنبيه تيليجرام إذا نزل رصيدك عند المزوّد عن هالمبلغ</div></div>'+
+      rows.map(r=>'<div class="card"><b>'+r[0]+'</b><div class="muted">الطلبات: '+r[1].n+' • المبيعات: $'+r[1].sales.toFixed(2)+' • الربح التقريبي: $'+r[1].profit.toFixed(2)+'</div></div>').join("")+
+      '<div class="muted">الربح التقريبي بيحسب من الطلبات المنفّذة اللي إلها سعر مزوّد.</div>';
+    $("bref").onclick = async ()=>{ $("bmsg").textContent = "جاري التحديث..."; const {data,error} = await sb.functions.invoke("sync",{body:{job:"balance"}}); if(error || (data && data.error)) { $("bmsg").textContent = "تعذّر: "+(data && data.error ? data.error : error.message); return; } render(); };
+    $("bths").onclick = async ()=>{ const {error} = await sb.from("settings").upsert({key:"low_balance", value:String(+$("bth").value||5)}); if(error) return fail(error); alert("تم حفظ الحد"); };
   }
   if(tabName==="cats"){
     const {data,error} = await sb.from("categories").select("*").order("sort").order("id");
