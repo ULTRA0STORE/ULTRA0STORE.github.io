@@ -16,12 +16,13 @@ h1{color:var(--main2);font-size:22px;margin:8px 0 14px}
 input,select{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px;color:var(--text);font-family:inherit;font-size:14px;margin-bottom:8px}
 button{font-family:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--main);color:#fff;font-weight:700;cursor:pointer}
 button.gray{background:#2a2a2a;border:1px solid var(--line)}
-.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;background:var(--card);border:1px solid var(--line)}.tabs button.on{background:var(--main)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.tabs button{flex:1 1 auto;padding:9px 10px;font-size:13px;background:var(--card);border:1px solid var(--line)}.tabs button.on{background:var(--main)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .muted{color:var(--muted);font-size:13px}.err{color:var(--main2);min-height:20px;font-size:13px;margin:6px 0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .st{padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+.vip{display:inline-block;padding:1px 10px;border-radius:999px;background:linear-gradient(135deg,#ffe27a,#f2b500);color:#3a2a00;font-weight:800;font-size:12px}
 </style>
 </head>
 <body><div class="box">
@@ -33,7 +34,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
   <button id="go" style="width:100%">دخول</button>
 </div>
 <div id="app" style="display:none">
-  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sum">الملخص</button><button data-t="sup">المزوّد</button><button data-t="deps">الإيداعات</button></div>
+  <div class="tabs"><button data-t="users" class="on">المستخدمون</button><button data-t="vip">VIP</button><button data-t="orders">الطلبات</button><button data-t="cats">الأقسام</button><button data-t="products">المنتجات</button><button data-t="sum">الملخص</button><button data-t="sup">المزوّد</button><button data-t="deps">الإيداعات</button></div>
   <div id="view"></div>
   <button class="gray" id="out" style="margin-top:10px">تسجيل الخروج</button>
 </div>
@@ -44,7 +45,8 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ST = {pending:"قيد التنفيذ", done:"تم", rejected:"مرفوض"};
-let tabName = "users", usersCache = [], catsCache = [];
+let tabName = "users", usersCache = [], catsCache = [], levelsCache = [];
+const resolveEmail = s => { s = String(s||"").trim().toLowerCase().replace(/^#/,""); if(/^\d+$/.test(s)){ const u = usersCache.find(x=>String(x.public_id)===s); return u ? u.email : ""; } return s; };
 const orderTail = o => {
   const note = o.note ? '<div class="muted" dir="auto" style="'+(o.status==="pending"?'color:#ff8a8a':'')+'">'+esc(o.note)+'</div>' : '';
   if(o.status!=="pending") return note;
@@ -79,20 +81,35 @@ function fail(e){ alert("خطأ: " + (e.message||e)); }
 async function render(){
   const v = $("view"); v.innerHTML = '<div class="muted">جاري التحميل...</div>';
   if(tabName==="users"){
-    const {data,error} = await sb.from("profiles").select("email,balance,is_admin").order("created_at",{ascending:false}).limit(300);
-    if(error) return fail(error);
-    usersCache = data;
-    v.innerHTML = '<div class="card"><b>إضافة رصيد</b><input id="ue" dir="ltr" placeholder="ايميل الزبون"><input id="ua" type="number" step="0.01" placeholder="المبلغ بالدولار (سالب للخصم)"><button id="uadd" style="width:100%">إضافة</button><div style="height:10px"></div><input id="upw" dir="ltr" placeholder="كلمة سر جديدة للزبون (6 أحرف على الأقل)"><button id="upass" class="gray" style="width:100%">تعيين كلمة السر</button></div>'+
-      '<input id="usr" placeholder="ابحث بالايميل..."><div id="ulist"></div>';
+    let pr = await sb.from("profiles").select("id,public_id,email,balance,is_admin").order("created_at",{ascending:false}).limit(300);
+    if(pr.error) pr = await sb.from("profiles").select("id,email,balance,is_admin").order("created_at",{ascending:false}).limit(300);
+    if(pr.error) return fail(pr.error);
+    const [lv, uv] = await Promise.all([sb.from("vip_levels").select("id,name,percent").order("percent"), sb.from("user_vip").select("user_id,level_id")]);
+    usersCache = pr.data; levelsCache = lv.data||[];
+    const vm = {}; (uv.data||[]).forEach(x=>vm[x.user_id]=x.level_id);
+    usersCache.forEach(u=>{ u.vip = levelsCache.find(x=>x.id===vm[u.id]) || null; });
+    const levelOpts = levelsCache.length ? levelsCache.map(l=>'<option value="'+l.id+'">'+esc(l.name)+' — '+Number(l.percent)+'%</option>').join("") : '<option value="">أضف مستويات من تبويب VIP</option>';
+    v.innerHTML = '<div class="card"><b>إضافة رصيد</b><input id="ue" dir="ltr" placeholder="ايميل الزبون أو رقم الحساب (ID)"><input id="ua" type="number" step="0.01" placeholder="المبلغ بالدولار (سالب للخصم)"><button id="uadd" style="width:100%">إضافة</button><div style="height:10px"></div><input id="upw" dir="ltr" placeholder="كلمة سر جديدة للزبون (6 أحرف على الأقل)"><button id="upass" class="gray" style="width:100%">تعيين كلمة السر</button></div>'+
+      '<div class="card"><b>تفعيل VIP</b><div class="muted" style="margin-bottom:8px">اكتب الايميل أو رقم الحساب بالخانة فوق (أو اضغط على زبون من القائمة)</div><select id="vl">'+levelOpts+'</select><div class="two"><button id="vset">تفعيل</button><button id="vclr" class="gray">إلغاء VIP</button></div></div><input id="usr" placeholder="ابحث بالايميل أو رقم الحساب..."><div id="ulist"></div>';
     const draw = ()=>{
       const q = $("usr").value.trim().toLowerCase();
-      $("ulist").innerHTML = usersCache.filter(u=>!q||u.email.includes(q)).map(u=>
-        '<div class="card row" data-e="'+esc(u.email)+'" style="cursor:pointer"><span dir="ltr">'+esc(u.email)+(u.is_admin?' ★':'')+'</span><b>'+Number(u.balance).toFixed(2)+' $</b></div>').join("") || '<div class="muted">لا يوجد</div>';
+      $("ulist").innerHTML = usersCache.filter(u=>!q||u.email.includes(q)||String(u.public_id||"")===q.replace("#","")).map(u=>
+        '<div class="card row" data-e="'+esc(u.email)+'" style="cursor:pointer"><span dir="ltr">'+(u.public_id?'<span class="muted">#'+u.public_id+'</span> ':'')+esc(u.email)+(u.is_admin?' ★':'')+'</span><span>'+(u.vip?'<span class="vip">'+esc(u.vip.name)+'</span> ':'')+'<b>'+Number(u.balance).toFixed(2)+' $</b></span></div>').join("") || '<div class="muted">لا يوجد</div>';
       $("ulist").querySelectorAll("[data-e]").forEach(c=>c.onclick=()=>{ $("ue").value = c.dataset.e; $("ua").focus(); });
     };
     $("usr").oninput = draw; draw();
+    const setVip = async clear=>{
+      const id = $("ue").value.trim().replace(/^#/,"");
+      if(!id) return alert("اكتب الايميل أو رقم الحساب");
+      const lvl = clear ? null : (+$("vl").value||0);
+      if(!clear && !lvl) return alert("اختر المستوى");
+      const {error} = await sb.rpc("admin_set_vip",{p_ident:id, p_level:lvl});
+      if(error) return fail(error.message.includes("user_not_found") ? "الزبون غير موجود" : error);
+      render();
+    };
+    $("vset").onclick = ()=>setVip(false); $("vclr").onclick = ()=>setVip(true);
     $("upass").onclick = async ()=>{
-      const e = $("ue").value.trim().toLowerCase(), p = $("upw").value;
+      const e = resolveEmail($("ue").value), p = $("upw").value;
       if(!e || p.length < 6) return alert("اكتب الايميل وكلمة سر من 6 أحرف أو أكثر");
       if(!confirm("تعيين كلمة سر جديدة للزبون "+e+" ؟")) return;
       const {data,error} = await sb.functions.invoke("sync",{body:{job:"setpass", email:e, password:p}});
@@ -100,13 +117,38 @@ async function render(){
       $("upw").value = ""; alert("تم تعيين كلمة السر. أرسلها للزبون.");
     };
     $("uadd").onclick = async ()=>{
-      const a = parseFloat($("ua").value);
-      if(!$("ue").value.trim() || !isFinite(a) || a===0) return alert("اكتب الايميل والمبلغ");
-      if(!confirm("إضافة "+a+" $ إلى "+$("ue").value.trim()+" ؟")) return;
-      const {error} = await sb.rpc("admin_add_balance",{p_email:$("ue").value, p_amount:a});
+      const a = parseFloat($("ua").value), em = resolveEmail($("ue").value);
+      if(!em || !isFinite(a) || a===0) return alert("اكتب الايميل (أو رقم الحساب) والمبلغ");
+      if(!confirm("إضافة "+a+" $ إلى "+em+" ؟")) return;
+      const {error} = await sb.rpc("admin_add_balance",{p_email:em, p_amount:a});
       if(error) return fail(error.message==="user_not_found"?"الايميل غير موجود أو الرصيد يصير سالب":error);
       render();
     };
+  }
+  if(tabName==="vip"){
+    const {data,error} = await sb.from("vip_levels").select("id,name,percent").order("percent");
+    if(error) return fail(error);
+    levelsCache = data;
+    v.innerHTML = '<div class="card"><b>إضافة مستوى VIP</b><input id="vn" placeholder="اسم المستوى (مثلا VIP1)"><input id="vp" type="number" step="0.1" min="0" max="100" placeholder="نسبة الخصم % (مثلا 1 أو 2)"><button id="vadd" style="width:100%">حفظ</button></div>'+
+      (data.map(l=>'<div class="card row"><div><span class="vip">'+esc(l.name)+'</span> <b>'+Number(l.percent)+'%</b></div><div><button class="gray" data-ve="'+l.id+'">تعديل النسبة</button> <button class="gray" data-vd="'+l.id+'">حذف</button></div></div>').join("") || '<div class="muted">لا يوجد مستويات</div>')+
+      '<div class="muted">النسبة بتنطبق تلقائياً على كل مشتريات الزبون. لتفعيل VIP لزبون روح لتبويب المستخدمون.</div>';
+    $("vadd").onclick = async ()=>{
+      const n = $("vn").value.trim(), p = parseFloat($("vp").value);
+      if(!n || !isFinite(p) || p<0 || p>100) return alert("اكتب الاسم ونسبة بين 0 و 100");
+      const {error} = await sb.rpc("admin_save_vip_level",{p_id:null, p_name:n, p_percent:p});
+      if(error) return fail(error.message.includes("duplicate") ? "الاسم موجود مسبقاً" : error); render();
+    };
+    v.querySelectorAll("[data-ve]").forEach(b=>b.onclick=async()=>{
+      const l = levelsCache.find(x=>x.id==b.dataset.ve), s = prompt("نسبة الخصم الجديدة لـ "+l.name+" (%)", l.percent); if(s===null) return;
+      const p = parseFloat(s); if(!isFinite(p) || p<0 || p>100) return alert("نسبة غير صالحة");
+      const {error} = await sb.rpc("admin_save_vip_level",{p_id:l.id, p_name:l.name, p_percent:p});
+      if(error) return fail(error); render();
+    });
+    v.querySelectorAll("[data-vd]").forEach(b=>b.onclick=async()=>{
+      if(!confirm("حذف المستوى؟ الزبائن اللي عليه بيرجعوا عاديين.")) return;
+      const {error} = await sb.rpc("admin_delete_vip_level",{p_id:+b.dataset.vd});
+      if(error) return fail(error); render();
+    });
   }
   if(tabName==="orders"){
     const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,supplier_product_id,note,profiles(email)").order("id",{ascending:false}).limit(100);
