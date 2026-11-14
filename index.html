@@ -224,6 +224,17 @@ header .login{flex:none;white-space:nowrap;padding:8px 12px;font-size:13px}
 .row2{display:flex;justify-content:space-between;align-items:center;margin:14px 0;color:var(--muted);font-size:13px}
 .disc{width:38px;height:38px;border-radius:50%;border:2px solid var(--main);color:var(--main2);font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center;flex:none}
 .odet{margin:-4px 0 6px}
+.overlay.mid .sheet.pop{width:100%;max-width:340px;border-radius:14px;padding:22px 20px 12px;text-align:right}
+.pop-logo{display:block;width:52px;height:52px;border-radius:10px;margin:0 0 14px}
+.pop h2{font-size:19px;font-weight:800;margin:0 0 6px}
+.pop p{margin:0 0 18px;line-height:1.8}
+.pop .buy{border-radius:10px;margin-top:0}
+.pop-later{display:block;width:100%;background:none;border:0;color:var(--muted);font-family:inherit;font-size:14px;padding:14px 0 6px;cursor:pointer}
+.dhero .dimg{box-shadow:none}
+.ring .r1{filter:none}
+.bnav .home i{box-shadow:0 2px 6px rgba(0,0,0,.45)}
+.tile:hover .ico,.tile:focus-visible .ico{box-shadow:none}
+.tile .ico svg{filter:none}
 </style>
 </head>
 <body>
@@ -288,10 +299,11 @@ header .login{flex:none;white-space:nowrap;padding:8px 12px;font-size:13px}
 
 <div class="overlay mid" id="popup">
   <div class="sheet pop">
-    <h2>أهلاً وسهلاً بكم في ULTRA0 STORE</h2>
-    <p>يجب على الجميع الانضمام إلى قناة المتجر على واتساب لمتابعة العروض والأسعار والإشعارات المهمة.</p>
-    <a class="buy wa" id="popTg" target="_blank" rel="noopener">انضم إلى قناة واتساب</a>
-    <button class="buy tg" id="popClose" style="width:100%;margin-top:8px;padding:12px;font-size:15px">إغلاق</button>
+    <img class="pop-logo" src="icon-192.png" alt="" width="52" height="52">
+    <h2>تابعنا على واتساب</h2>
+    <p>الأسعار والعروض وأي تغيير بالخدمات بننزّلها أولاً بقناة المتجر.</p>
+    <a class="buy wa" id="popTg" target="_blank" rel="noopener">فتح القناة</a>
+    <button class="pop-later" id="popClose">لاحقاً</button>
   </div>
 </div>
 
