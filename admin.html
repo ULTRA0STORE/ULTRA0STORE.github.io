@@ -166,10 +166,24 @@ async function render(){
   }
   if(tabName==="sup"){
     const {data} = await sb.from("settings").select("value").eq("key","margin").maybeSingle();
-    v.innerHTML = '<div class="card"><b>نسبة الربح %</b><input id="mg" type="number" step="0.1" value="'+(data?data.value:10)+'"><button id="mgs" style="width:100%">حفظ النسبة</button></div><div class="card"><button id="s1" style="width:100%">تحديث الأقسام والمنتجات من المزوّد</button><div style="height:8px"></div><button id="s2" class="gray" style="width:100%">فحص الطلبات الآن</button><div id="sres" class="muted" style="margin-top:8px"></div></div>';
+    const gs = await sb.functions.invoke("sync",{body:{job:"getsupplier"}});
+    const curUrl = gs.data && gs.data.url ? gs.data.url : "";
+    v.innerHTML = '<div class="card"><b>ربط المزوّد</b><div class="muted">المزوّد الحالي: <span dir="ltr">'+esc(curUrl||"غير معروف")+'</span></div><input id="su" dir="ltr" placeholder="رابط الـ API مثل https://api.example.com" value="'+esc(curUrl)+'"><input id="st" type="password" dir="ltr" autocomplete="off" placeholder="مفتاح الـ API (اتركه فاضي للإبقاء على الحالي)"><button id="stest" class="gray" style="width:100%">اختبار الاتصال</button><div style="height:8px"></div><button id="ssave" style="width:100%">حفظ وتبديل المزوّد</button><div class="muted" id="smsg" style="margin-top:8px"></div></div><div class="card"><b>نسبة الربح %</b><input id="mg" type="number" step="0.1" value="'+(data?data.value:10)+'"><button id="mgs" style="width:100%">حفظ النسبة</button></div><div class="card"><button id="s1" style="width:100%">تحديث الأقسام والمنتجات من المزوّد</button><div style="height:8px"></div><button id="s2" class="gray" style="width:100%">فحص الطلبات الآن</button><div id="sres" class="muted" style="margin-top:8px"></div></div>';
     $("mgs").onclick = async ()=>{ const {error} = await sb.from("settings").upsert({key:"margin", value:String(+$("mg").value||0)}); if(error) return fail(error); alert("تم الحفظ، بتطبق عند التحديث القادم"); };
     const run = async (job,btn)=>{ btn.disabled = true; $("sres").textContent = "جاري التنفيذ..."; const {data,error} = await sb.functions.invoke("sync",{body:{job}}); btn.disabled = false; $("sres").textContent = error ? ("خطأ: "+error.message) : JSON.stringify(data); };
     $("s1").onclick = ()=>run("products",$("s1")); $("s2").onclick = ()=>run("orders",$("s2"));
+    const call = async (job, extra)=>{ const r = await sb.functions.invoke("sync",{body:Object.assign({job}, extra)}); return r.error ? {error:r.error.message} : (r.data||{}); };
+    const vals = ()=>({url:$("su").value.trim(), token:$("st").value.trim()});
+    $("stest").onclick = async ()=>{ $("smsg").textContent = "جاري الاختبار..."; const r = await call("testsupplier", vals()); $("smsg").textContent = r.error ? "فشل: "+r.error : "نجح الاتصال. رصيدك عنده: "+r.balance+" "+(r.currency||""); };
+    $("ssave").onclick = async ()=>{
+      const v2 = vals(); let same = false;
+      try{ same = new URL(v2.url).host === new URL(curUrl).host; }catch(e){}
+      if(!confirm(same ? "حفظ إعدادات المزوّد؟" : "تبديل المزوّد؟ سيتم مسح أقسام ومنتجات المزوّد القديم وتحميل الجديد (الطلبات القديمة بتبقى).")) return;
+      $("smsg").textContent = "جاري الحفظ...";
+      const r = await call("setsupplier", v2);
+      if(r.error){ $("smsg").textContent = r.error==="pending_orders" ? "في طلبات معلّقة ("+r.pending+")، انتظر لحد ما تنتهي وبعدين بدّل" : "فشل: "+r.error; return; }
+      $("st").value = ""; $("smsg").textContent = "تم الحفظ"+(r.changed ? " ومسح بيانات المزوّد القديم" : "")+". اضغط تحديث الأقسام والمنتجات.";
+    };
   }
   if(tabName==="deps"){
     const [r, rt] = await Promise.all([
@@ -261,6 +275,39 @@ async function render(){
   }
 }
 init();
+
+/* تبويب إعلان المتجر */
+(function(){
+const bar=document.querySelector(".tabs"), nb=document.createElement("button"); nb.dataset.t="ann"; nb.textContent="الإعلان"; bar.appendChild(nb);
+nb.onclick=()=>{ tabName="ann"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+document.querySelectorAll(".tabs button").forEach(b=>{ if(b!==nb) b.addEventListener("click",()=>{}); });
+const _r=render;
+render=async function(){
+  if(tabName!=="ann") return _r();
+  const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","announcement").maybeSingle();
+  v.innerHTML='<div class="card"><b>نص الشريط المتحرك بالموقع</b><input id="an" value="'+esc(data?data.value:"")+'" placeholder="اكتب الإعلان (فاضي = النص الافتراضي)"><button id="ans" style="width:100%">حفظ</button></div>';
+  $("ans").onclick=async()=>{ const {error}=await sb.from("settings").upsert({key:"announcement",value:$("an").value.trim()}); if(error) return fail(error); alert("تم الحفظ"); };
+};
+})();
+
+/* تبويب نوع الإدخال */
+(function(){
+const nb = document.createElement("button"); nb.textContent = "نوع الإدخال"; document.querySelector(".tabs").appendChild(nb);
+nb.onclick = ()=>{ tabName = "inp"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r = render;
+render = async function(){
+  if(tabName!=="inp") return _r();
+  const v = $("view"); v.innerHTML = '<div class="muted">جاري التحميل...</div>';
+  const [c,s] = await Promise.all([sb.from("categories").select("id,parent_id,name").order("sort").order("id"), sb.from("settings").select("value").eq("key","input_types").maybeSingle()]);
+  if(c.error) return fail(c.error); catsCache = c.data; let M = {}; try{ M = JSON.parse(s.data.value)||{}; }catch(e){}
+  const O = [["","تلقائي"],["id","رقم اللاعب (ID)"],["link","رابط"],["phone","رقم هاتف"],["none","بدون إدخال"]];
+  v.innerHTML = '<div class="muted" style="margin-bottom:8px">حدّد شو بيُطلب من الزبون عند الشراء. الاختيار بينطبق على الأقسام اللي تحته كمان. «تلقائي» = النظام بيخمّن.</div><input id="ifl" placeholder="بحث عن قسم..."><div id="il"></div>';
+  const draw = ()=>{ const q = $("ifl").value.trim().toLowerCase();
+    $("il").innerHTML = catsCache.filter(x=>!q||pathOf(x.id).toLowerCase().includes(q)).slice(0,80).map(x=>'<div class="card row"><span>'+esc(pathOf(x.id))+'</span><select data-c="'+x.id+'" style="width:auto;margin:0">'+O.map(o=>'<option value="'+o[0]+'"'+((M[x.id]||"")==o[0]?" selected":"")+'>'+o[1]+'</option>').join("")+'</select></div>').join("");
+    $("il").querySelectorAll("select").forEach(se=>se.onchange = async ()=>{ if(se.value) M[se.dataset.c] = se.value; else delete M[se.dataset.c]; const {error} = await sb.from("settings").upsert({key:"input_types",value:JSON.stringify(M)}); if(error) fail(error); }); };
+  $("ifl").oninput = draw; draw();
+};
+})();
 </script>
 </body>
 </html>
