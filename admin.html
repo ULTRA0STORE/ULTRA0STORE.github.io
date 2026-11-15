@@ -270,9 +270,17 @@ document.querySelectorAll(".tabs button").forEach(b=>{ if(b!==nb) b.addEventList
 const _r=render;
 render=async function(){
   if(tabName!=="ann") return _r();
-  const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","announcement").maybeSingle();
-  v.innerHTML='<div class="card"><b>نص الشريط المتحرك بالموقع</b><input id="an" value="'+esc(data?data.value:"")+'" placeholder="اكتب الإعلان (فاضي = النص الافتراضي)"><button id="ans" style="width:100%">حفظ</button></div>';
-  $("ans").onclick=async()=>{ const {error}=await sb.from("settings").upsert({key:"announcement",value:$("an").value.trim()}); if(error) return fail(error); alert("تم الحفظ"); };
+  const v=$("view"); const {data:rows}=await sb.from("settings").select("key,value").in("key",["announcement","ann_color","ann_dir","ann_speed"]);
+  const o={}; (rows||[]).forEach(x=>o[x.key]=x.value);
+  const col=/^#[0-9a-fA-F]{6}$/.test(o.ann_color||"")?o.ann_color:"#e01e37", dir=o.ann_dir||"rtl", spd=o.ann_speed||"22";
+  v.innerHTML='<div class="card"><b>نص الشريط المتحرك بالموقع</b><input id="an" value="'+esc(o.announcement||"")+'" placeholder="اكتب الإعلان (فاضي = النص الافتراضي)">'+
+   '<b>لون الخط</b><input id="anc" type="color" value="'+col+'" style="height:44px;padding:2px">'+
+   '<b>اتجاه الحركة</b><select id="and"><option value="rtl"'+(dir==="rtl"?" selected":"")+'>من اليمين لليسار</option><option value="ltr"'+(dir==="ltr"?" selected":"")+'>من اليسار لليمين</option><option value="none"'+(dir==="none"?" selected":"")+'>بدون حركة (ثابت)</option></select>'+
+   '<b>مدة الدورة بالثواني (أقل = أسرع)</b><input id="ans2" type="number" min="5" max="120" value="'+esc(spd)+'">'+
+   '<button id="ans" style="width:100%">حفظ</button></div>';
+  $("ans").onclick=async()=>{ const sp=Math.min(120,Math.max(5,parseInt($("ans2").value)||22));
+    const {error}=await sb.from("settings").upsert([{key:"announcement",value:$("an").value.trim()},{key:"ann_color",value:$("anc").value},{key:"ann_dir",value:$("and").value},{key:"ann_speed",value:String(sp)}]);
+    if(error) return fail(error); alert("تم الحفظ"); };
 };
 })();
 

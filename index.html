@@ -52,6 +52,7 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:va
 .ticker{max-width:900px;margin:10px auto 0;overflow:hidden;border-block:1px solid var(--line);background:var(--card);padding:7px 0}
 .ticker span{display:inline-block;white-space:nowrap;color:var(--main2);font-weight:700;font-size:14px;animation:tick 22s linear infinite}
 @keyframes tick{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+@keyframes tickr{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 .social{display:flex;justify-content:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap;padding:0 10px}
 .social a{background:var(--card);border:1px solid var(--line);padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;transition:.2s}
 .social a:hover{background:var(--main);color:#fff}
@@ -305,6 +306,10 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
 :root{--cat-gap:14px 10px}
 @media(min-width:640px){:root{--cat-gap:20px 16px}}
 @media(prefers-reduced-motion:reduce){.grid .cat,.grid .cat .ico{transition:none}}
+/* نافذة الشراء بنص الشاشة */
+#overlay{align-items:center;padding:16px}
+#overlay .sheet{border-radius:24px;max-width:460px;max-height:86vh;padding-bottom:22px;animation:popc .22s ease}
+@keyframes popc{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -1255,7 +1260,16 @@ $("menu").addEventListener("click",e=>{ if(!e.target.closest("#mOrders")) op.cla
 const nb = document.querySelectorAll(".bnav button"), last = nb[nb.length-1];
 last.innerHTML = '<i>'+ico("cart",23)+'</i><span>السلة</span>';
 last.onclick = ()=>window.openCart();
-if(sb) sb.from("settings").select("value").eq("key","announcement").maybeSingle().then(r=>{ const v = r.data && r.data.value; if(v && v.trim()) document.querySelector(".ticker span").textContent = v; }).catch(()=>{});
+if(sb) sb.from("settings").select("key,value").in("key",["announcement","ann_color","ann_dir","ann_speed"]).then(r=>{
+  const o={}; (r.data||[]).forEach(x=>o[x.key]=x.value);
+  const sp=document.querySelector(".ticker span"); if(!sp) return;
+  if(o.announcement && o.announcement.trim()) sp.textContent=o.announcement;
+  if(/^#[0-9a-fA-F]{3,8}$/.test(o.ann_color||"")) sp.style.color=o.ann_color;
+  const sec=Math.min(120,Math.max(5,parseInt(o.ann_speed)||22));
+  if(o.ann_dir==="ltr"){ sp.style.animationName="tickr"; sp.style.animationDuration=sec+"s"; }
+  else if(o.ann_dir==="none"){ sp.style.animation="none"; sp.style.display="block"; sp.style.textAlign="center"; sp.style.whiteSpace="normal"; sp.style.padding="0 12px"; }
+  else sp.style.animationDuration=sec+"s";
+}).catch(()=>{});
 })();
 
 /* ===== إضافات 3: نوع الإدخال حسب القسم + بيانات الحساب + حلقة الخصم ===== */
