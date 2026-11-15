@@ -1,18 +1,20 @@
-const C = "u0-v1";
-self.addEventListener("install", e => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(C).then(c => c.addAll(["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"])).catch(() => {}));
-});
+// ULTRA0 STORE - service worker: يجيب دائماً النسخة الجديدة من النت أول
+const V = "u0-v3";
+self.addEventListener("install", e => { self.skipWaiting(); });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim()));
+  e.waitUntil(
+    caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 self.addEventListener("fetch", e => {
   const r = e.request;
-  if (r.method !== "GET" || new URL(r.url).origin !== location.origin) return;
+  if (r.method !== "GET" || !r.url.startsWith(self.location.origin)) return;
   e.respondWith(
-    fetch(r).then(res => {
-      if (res.ok) { const cp = res.clone(); caches.open(C).then(c => c.put(r, cp)); }
+    fetch(r, { cache: "no-store" }).then(res => {
+      const copy = res.clone();
+      caches.open(V).then(c => c.put(r, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match(r).then(m => m || caches.match("./index.html")))
+    }).catch(() => caches.match(r).then(m => m || caches.match("index.html")))
   );
 });
