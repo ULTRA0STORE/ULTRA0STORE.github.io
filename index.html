@@ -964,7 +964,11 @@ loadMe();
 })();
 
 (function(){
-  if("serviceWorker" in navigator) addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  if("serviceWorker" in navigator){
+    let _rl=false, _had=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", ()=>{ if(_had && !_rl){ _rl=true; location.reload(); } });
+    addEventListener("load", ()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{}));
+  }
   if(matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
   let dp = null, hidden = false;
   try{ hidden = localStorage.getItem("u0_pwa_x")==="1"; }catch(e){}
