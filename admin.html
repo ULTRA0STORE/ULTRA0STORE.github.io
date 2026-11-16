@@ -493,7 +493,7 @@ addTab("إشعار جماعي","bc",async function bc(){
     const t = $("bt").value.trim(), b = $("bb").value.trim(), e = $("be").value.trim(); if(!t||!b) return alert("اكتب العنوان والنص");
     if(!confirm(e ? "إرسال إلى "+e+"؟" : "إرسال لكل الأجهزة ("+(c.count||0)+")؟")) return; $("bs").disabled = true;
     const {data,error} = await sb.functions.invoke("send-push",{body:{broadcast:{title:t,body:b,email:e||undefined}}}); $("bs").disabled = false;
-    if(error || (data && data.error)) return alert("فشل الإرسال: "+((data && data.error) || error.message)); alert("تم الإرسال إلى "+data.sent+" جهاز"); bc();
+    if(error || (data && data.error)){ const fe = error && /Failed to send|fetch/i.test(error.message||""); return alert("فشل الإرسال: "+(fe ? "الدالة send-push غير منشورة أو اسمها غلط أو الأسرار ناقصة بـ Supabase (راجع الخطوة 2 و3 من SETUP)" : ((data && data.error) || error.message))); } alert("تم الإرسال إلى "+data.sent+" جهاز"); bc();
   };
   $("ws").onclick = async ()=>{ const t = $("wt").value.trim(), b = $("wb").value.trim();
     const {error} = await sb.from("settings").upsert({key:"welcome",value:JSON.stringify(b?{t,b,v:Date.now()}:{})}); if(error) return fail(error); alert(b?"تم النشر":"تم الإيقاف"); };
