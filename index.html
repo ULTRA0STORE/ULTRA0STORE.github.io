@@ -310,6 +310,11 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
 #overlay{align-items:center;padding:16px}
 #overlay .sheet{border-radius:24px;max-width:460px;max-height:86vh;padding-bottom:22px;animation:popc .22s ease}
 @keyframes popc{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+
+.pcard .fv{position:absolute;top:6px;left:8px;font-size:22px;line-height:1;color:#e11d48;cursor:pointer;z-index:2}
+
+.chipsid{margin-top:6px}.chipsid button{padding:5px 12px;margin:4px 0 0 6px;font-size:12px;border-radius:999px}
+.rcards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.rcards div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}.rcards b{display:block;font-size:18px}
 </style>
 </head>
 <body>
@@ -679,7 +684,7 @@ function openAbout(){
 const SB_URL = "https://sbzdkuyxccfyvktjhdas.supabase.co", SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiemRrdXl4Y2NmeXZrdGpoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTEzOTksImV4cCI6MjEwNzEyNzM5OX0.fuUbL4xWUndqylQXTJzCTXIY8Qd6V85pXvF40eJ5jYs";
 let sb = null, me = null;
 try{ if(!SB_URL.startsWith("PASTE") && !SB_KEY.startsWith("PASTE")) sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
-const money = n => Number(n||0).toFixed(2)+" $";
+const money = n => { const v = Number(n||0); return (Math.abs(Math.round(v*100)-v*100) > 0.0001 ? v.toFixed(3) : v.toFixed(2))+" $"; };
 const vpct = () => (me && me.vip) ? me.vip.pct : 0;
 const vprice = n => { const p = Number(n||0); return vpct() ? p*(1-vpct()/100) : p; };
 const pshow = n => vpct() ? '<span class="pold">'+money(n)+'</span>'+money(vprice(n)) : money(n);
@@ -1313,6 +1318,181 @@ new MutationObserver(()=>{
 
 const d = document.createElement("div"); d.className = "disc"; $("themeBtn").after(d);
 const _ru2 = refreshUser; refreshUser = function(){ _ru2(); d.style.display = me ? "flex" : "none"; d.textContent = "-"+(vpct()||0)+"%"; }; refreshUser();
+})();
+
+/* ===== المفضلة + ميزات جديدة ===== */
+(function(){
+const J = (k,d)=>{ try{ return JSON.parse(localStorage.getItem(k))||d; }catch(e){ return d; } }, W = (k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+const _ocf = openContact; openContact = async function(cat){ window.__fcat = cat; return _ocf(cat); };
+
+/* --- المفضلة مع تنبيه نزول السعر --- */
+const FK = "u0_fav", getF = ()=>J(FK,[]);
+function decorate(){
+  document.querySelectorAll("#prods .pcard[data-p]").forEach(c=>{
+    if(c.querySelector(".fv")) return; c.style.position = "relative";
+    const h = document.createElement("span"); h.className = "fv"; h.setAttribute("role","button"); h.setAttribute("aria-label","مفضلة");
+    const on = ()=>getF().some(x=>String(x.id)===String(c.dataset.p)); h.textContent = on() ? "♥" : "♡"; c.appendChild(h);
+    h.onclick = e=>{ e.stopPropagation(); e.preventDefault(); let a = getF();
+      if(on()) a = a.filter(x=>String(x.id)!==String(c.dataset.p));
+      else a.push({id:c.dataset.p, n:(c.querySelector(".pn")||{}).textContent||"", cat:window.__fcat, pr:parseFloat(((c.querySelector(".pp")||{}).textContent.match(/[\d.]+/)||[])[0])||null});
+      W(FK,a); h.textContent = on() ? "♥" : "♡"; toast(on() ? "أُضيف للمفضلة" : "أُزيل من المفضلة"); };
+  });
+}
+async function prices(a){ const r = await sb.from("products").select("id,price").in("id",a.map(x=>x.id)), m = {}; (r.data||[]).forEach(p=>m[p.id] = +p.price); return m; }
+function ptag(x,c){ let s = money(vprice(c)); if(x.pr && c < x.pr-.0005) s += ' <b style="color:#10d98a">↓ كان '+money(vprice(x.pr))+'</b>'; else if(x.pr && c > x.pr+.0005) s += ' <b style="color:#ff4d63">↑</b>'; return s; }
+function openFav(){
+  const a = getF();
+  if(!a.length) return openSheet("المفضلة",'<div class="note">ما في منتجات مفضلة بعد. اضغط ♡ على أي منتج لحفظه، وبننبهك إذا نزل سعره.</div>');
+  openSheet("المفضلة",'<div class="items">'+a.map((x,i)=>'<div class="item"><div style="cursor:pointer" data-fo="'+i+'"><div class="name">'+esc(x.n)+'</div><small>'+esc((x.cat&&x.cat.name)||"")+' • <span data-fp="'+i+'"></span></small></div><div class="btns"><button class="buy tg" data-fr="'+i+'" aria-label="حذف">✕</button></div></div>').join("")+'</div>');
+  document.querySelectorAll("[data-fr]").forEach(b=>b.onclick = ()=>{ const z = getF(); z.splice(+b.dataset.fr,1); W(FK,z); openFav(); });
+  document.querySelectorAll("[data-fo]").forEach(b=>b.onclick = async ()=>{ const f = getF()[+b.dataset.fo]; if(!f||!f.cat) return; closeSheet(); await openContact(f.cat);
+    setTimeout(()=>{ const c = document.querySelector('#prods .pcard[data-p="'+f.id+'"]'); if(c) c.click(); },300); });
+  if(sb) prices(a).then(m=>document.querySelectorAll("[data-fp]").forEach(e=>{ const x = a[+e.dataset.fp]; if(m[x.id]!=null) e.innerHTML = ptag(x,m[x.id]); })).catch(()=>{});
+}
+setTimeout(async ()=>{ const a = getF(); if(!a.length || !sb) return;
+  try{ const m = await prices(a); let n = 0; a.forEach(x=>{ const c = m[x.id]; if(c==null) return; const base = x.sp!=null ? x.sp : x.pr; if(base && c < base-.0005) n++; x.sp = c; }); W(FK,a); if(n) toast("📉 انخفض سعر "+n+" منتج في مفضلتك"); }catch(e){} },3500);
+
+/* --- حسابات اللاعبين المحفوظة + مؤشر الرصيد الذكي --- */
+const IK = "u0_ids";
+new MutationObserver(()=>{
+  const g = $("goBuy"), p = $("pid");
+  if(g && p && !g.dataset.u){ g.dataset.u = 1;
+    const k = ($("sheetTitle")||{}).textContent||"", lab = p.parentElement, l = J(IK,{})[k]||[];
+    if(l.length){ lab.insertAdjacentHTML("beforeend",'<div class="chipsid">'+l.map(x=>'<button type="button" class="buy tg" dir="ltr" data-id="'+esc(x)+'">'+esc(x)+'</button>').join("")+'</div>');
+      lab.querySelectorAll("[data-id]").forEach(b=>b.onclick = e=>{ e.preventDefault(); p.value = b.dataset.id; p.dispatchEvent(new Event("input")); }); }
+    g.addEventListener("click",()=>{ const v = p.value.trim(); if(!v || v==="-" || p.dataset.t==="none") return; const all = J(IK,{}), n = (all[k]||[]).filter(x=>x!==v); n.unshift(v); all[k] = n.slice(0,4); W(IK,all); });
+  }
+  const t = $("tot");
+  if(t && me){
+    let h = $("balHint"); if(!h){ t.insertAdjacentHTML("afterend",'<div id="balHint" style="margin:6px 0"></div>'); h = $("balHint"); }
+    const m = (t.textContent.match(/الإجمالي:\s*([\d.]+)/)||[])[1];
+    if(m && +m>0){ const tot = +m, bal = +me.balance||0;
+      const html = bal<tot ? '<button type="button" class="buy wa" id="needTop" style="width:100%;padding:10px">ينقصك '+money(tot-bal)+' — اشحن رصيدك</button>' : '<small style="color:var(--muted)">رصيدك يكفي لـ <b>'+Math.floor(bal/tot+1e-9)+'</b> مرة • المتبقي بعد الشراء '+money(bal-tot)+'</small>';
+      if(h.dataset.k!==html){ h.dataset.k = html; h.innerHTML = html; const b = $("needTop"); if(b) b.onclick = ()=>{ closeSheet(); if(window.openDeposit) window.openDeposit(); }; } }
+  }
+}).observe($("sheetBody"),{childList:true,subtree:true,characterData:true});
+
+/* --- ملخصي: بطاقة قابلة للمشاركة --- */
+function drawCard(c,S){
+  const x = c.getContext("2d"), W_ = 1080, H = 1350, g = x.createLinearGradient(0,0,W_,H);
+  g.addColorStop(0,"#5a0010"); g.addColorStop(.5,"#1a0206"); g.addColorStop(1,"#000"); x.fillStyle = g; x.fillRect(0,0,W_,H);
+  x.direction = "rtl"; x.textAlign = "center"; x.fillStyle = "#fff"; x.font = "bold 56px sans-serif"; x.fillText("ULTRA0 STORE",W_/2,140);
+  x.font = "40px sans-serif"; x.fillStyle = "#ff8a98"; x.fillText("ملخص رحلتك معنا",W_/2,215);
+  x.fillStyle = "#fff"; x.font = "bold 72px sans-serif"; x.fillText(String(S.name).slice(0,20),W_/2,360);
+  x.font = "bold 150px sans-serif"; x.fillStyle = "#ff3b52"; x.fillText(money(S.spent),W_/2,560);
+  x.font = "38px sans-serif"; x.fillStyle = "#ddd"; x.fillText("إجمالي ما شحنته",W_/2,620);
+  const rows = [["الطلبات المكتملة",S.n],["لعبتك المفضلة",S.game+" ("+S.gn+")"],["أكثر منتج طلبته",S.prod],["معنا منذ",S.days+" يوم"]].concat(S.vip?[["مستواك",S.vip]]:[]);
+  rows.forEach((r,i)=>{ const y = 740+i*105; x.fillStyle = "rgba(255,255,255,.07)"; x.fillRect(80,y-62,920,86);
+    x.textAlign = "right"; x.fillStyle = "#bbb"; x.font = "34px sans-serif"; x.fillText(r[0],976,y);
+    x.textAlign = "left"; x.fillStyle = "#fff"; x.font = "bold 36px sans-serif"; x.fillText(String(r[1]).slice(0,24),104,y); });
+  x.textAlign = "center"; x.fillStyle = "#888"; x.font = "32px sans-serif"; x.fillText("ultra0store.github.io",W_/2,1290);
+}
+async function openRecap(){
+  if(!me){ closeSheet(); toast("سجّل دخولك أولاً"); return openAuth(); }
+  openSheet("ملخصي",'<div class="note">جاري التحليل...</div>');
+  const r = await sb.from("orders").select("game,product_name,price,status,created_at").eq("user_id",me.id).limit(2000), ok = (r.data||[]).filter(o=>o.status==="done");
+  if(!ok.length) return openSheet("ملخصي",'<div class="note">ما في طلبات مكتملة بعد. أول عملية شحن وبتبدأ قصتك 🚀</div>');
+  const top = f=>{ const g = {}; ok.forEach(o=>{ const k = o[f]||"-"; g[k] = (g[k]||0)+1; }); return Object.entries(g).sort((a,b)=>b[1]-a[1])[0]; };
+  const tg = top("game"), tp = top("product_name"), spent = ok.reduce((s,o)=>s+(+o.price||0),0), first = Math.min(...ok.map(o=>+new Date(o.created_at)));
+  const S = {name:dname(), spent, n:ok.length, game:tg[0], gn:tg[1], prod:tp[0], days:Math.max(1,Math.round((Date.now()-first)/864e5)), vip:me.vip?me.vip.name:""};
+  openSheet("ملخصي",'<div class="rcards"><div><small>إجمالي الشحن</small><b>'+money(spent)+'</b></div><div><small>الطلبات</small><b>'+S.n+'</b></div><div><small>لعبتك المفضلة</small><b>'+esc(S.game)+'</b></div><div><small>معنا منذ</small><b>'+S.days+' يوم</b></div></div><canvas id="rcv" width="1080" height="1350" style="width:100%;border-radius:16px"></canvas><button class="submit" id="rshare" style="margin-top:10px">مشاركة البطاقة</button>');
+  const c = $("rcv"); drawCard(c,S);
+  $("rshare").onclick = ()=>c.toBlob(async b=>{ const f = new File([b],"ultra0-summary.png",{type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:"ملخصي في ULTRA0"}); return; }catch(e){ if(e.name==="AbortError") return; } }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ultra0-summary.png"; a.click(); });
+}
+window.openRecap = openRecap;
+
+/* --- القائمة + عدّاد الثقة (اختياري، يحتاج public_stats) --- */
+const mf = document.createElement("button"); mf.className = "mi"; mf.innerHTML = '<span style="font-size:20px;color:#e11d48;width:20px;text-align:center">♥</span><span>المفضلة</span>';
+mf.onclick = ()=>{ toggleMenu(false); openFav(); }; $("mOrders").before(mf);
+const mr = document.createElement("button"); mr.className = "mi"; mr.innerHTML = '<span style="font-size:20px;width:20px;text-align:center">✨</span><span>ملخصي</span>';
+mr.onclick = ()=>{ toggleMenu(false); openRecap(); }; $("mOrders").before(mr);
+if(sb) Promise.resolve(sb.rpc("public_stats")).then(r=>{ const d = r && r.data; if(!d || !d.done_24h) return; const el = document.createElement("div"); el.className = "tagline";
+  el.innerHTML = '🔥 تم تنفيذ <b>'+(+d.done_24h)+'</b> طلب خلال آخر 24 ساعة'; (document.querySelector(".tagline")||document.querySelector(".ticker")).after(el); }).catch(()=>{});
+})();
+
+/* ===== إشعارات النظام (Web Push) ===== */
+(function(){
+const PUB = "BOWWiUf8GK9uh4boCZ3UEndLs2SdY5ey4Qkg4T-fJ9xsjAIEcSsGpvppbdmkWarNTMzs4LU_EN78ETdkD9h4LBo", ok = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const u8 = s=>{ const p = "=".repeat((4-s.length%4)%4), b = atob((s+p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from([...b].map(c=>c.charCodeAt(0))); };
+const reg = ()=>navigator.serviceWorker.ready;
+async function save(sub){
+  const j = sub.toJSON(); if(!me || !sb) return false;
+  const {error} = await sb.from("push_subscriptions").upsert({user_id:me.id, endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth},{onConflict:"endpoint"});
+  return !error;
+}
+async function enable(){
+  if(!ok) return toast("جهازك أو متصفحك ما بيدعم الإشعارات. ثبّت التطبيق على الشاشة الرئيسية");
+  if(!me){ toast("سجّل دخولك أولاً"); return openAuth(); }
+  const perm = await Notification.requestPermission();
+  if(perm!=="granted") return toast("الإشعارات مرفوضة. فعّلها من إعدادات المتصفح للموقع");
+  try{
+    const r = await reg(); let sub = await r.pushManager.getSubscription();
+    if(!sub) sub = await r.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:u8(PUB)});
+    toast(await save(sub) ? "تم تفعيل إشعارات الجهاز ✅" : "تعذّر حفظ الاشتراك، تأكد من تشغيل ملف push_setup.sql");
+  }catch(e){ toast("تعذّر تفعيل الإشعارات"); }
+  paint();
+}
+async function disable(){
+  try{ const r = await reg(), sub = await r.pushManager.getSubscription();
+    if(sub){ if(sb) await sb.from("push_subscriptions").delete().eq("endpoint",sub.endpoint); await sub.unsubscribe(); } }catch(e){}
+  toast("تم إيقاف إشعارات الجهاز"); paint();
+}
+const mp = document.createElement("button"); mp.className = "mi"; mp.style.display = ok ? "" : "none"; $("mOrders").before(mp);
+async function paint(){
+  let on = false;
+  if(ok && Notification.permission==="granted"){ try{ on = !!(await (await reg()).pushManager.getSubscription()); }catch(e){} }
+  mp.innerHTML = '<span style="font-size:20px;width:20px;text-align:center">'+(on?"🔔":"🔕")+'</span><span>'+(on?"إيقاف إشعارات الجهاز":"تفعيل إشعارات الجهاز")+'</span>';
+  mp.onclick = ()=>{ toggleMenu(false); on ? disable() : enable(); };
+}
+paint();
+const _rup = refreshUser;
+refreshUser = function(){ _rup(); if(ok && me && Notification.permission==="granted") reg().then(r=>r.pushManager.getSubscription()).then(s=>s&&save(s)).catch(()=>{}); paint();
+  if(ok && me && Notification.permission==="default" && !localStorage.getItem("u0_pushask")){ setTimeout(()=>{ if(document.getElementById("overlay").classList.contains("show")) return; localStorage.setItem("u0_pushask","1"); openSheet("فعّل الإشعارات 🔔",'<div class="note">بتوصلك إشعارات على جهازك لما يخلص شحنك أو يتقبل إيداعك، حتى لو الموقع مسكّر.</div><button class="submit" id="pushYes">تفعيل الإشعارات</button><button class="linkbtn" id="pushNo">لاحقاً</button>');
+      $("pushYes").onclick = ()=>{ closeSheet(); enable(); }; $("pushNo").onclick = closeSheet; },2500); } };
+refreshUser();
+if(/[?&]orders\b/.test(location.search)) setTimeout(()=>{ if(me && window.openOrders) window.openOrders(); },3000);
+})();
+
+/* ===== أكواد الهدايا + الشكاوى + رسالة الترحيب + الحظر ===== */
+(function(){
+const need = ()=>{ if(me) return false; closeSheet(); toast("سجّل دخولك أولاً"); openAuth(); return true; };
+function openGift(){
+  if(need()) return;
+  openSheet("كود هدية 🎁",'<label class="field">اكتب الكود<input id="gc" dir="ltr" autocapitalize="characters" placeholder="XXXXXXXX"></label><button class="submit" id="gcb">استلام الهدية</button>');
+  $("gcb").onclick = async ()=>{
+    const c = $("gc").value.trim(); if(!c) return; $("gcb").disabled = true;
+    const {data,error} = await sb.rpc("redeem_gift",{p_code:c}); $("gcb").disabled = false;
+    if(error){ const m = error.message||""; return toast(m.includes("ALREADY_USED")?"استخدمت هذا الكود من قبل":m.includes("EXHAUSTED")?"انتهت كمية هذا الكود":m.includes("EXPIRED")?"انتهت صلاحية الكود":m.includes("BANNED")?"حسابك موقوف":"الكود غير صحيح"); }
+    toast("🎉 تمت إضافة "+money(data)+" إلى رصيدك"); closeSheet(); try{ loadMe(); }catch(e){}
+  };
+}
+async function openComplaints(){
+  if(need()) return;
+  const r = await sb.from("complaints").select("id,order_ref,message,status,reply,created_at").eq("user_id",me.id).order("id",{ascending:false}).limit(20);
+  openSheet("الشكاوى والملاحظات",'<label class="field">رقم الطلب (اختياري)<input id="cfo" dir="ltr"></label><label class="field">شكواك أو ملاحظتك<textarea id="cfm" rows="3" maxlength="500" style="width:100%"></textarea></label><button class="submit" id="cfs">إرسال</button><div class="items" style="margin-top:12px">'+
+    ((r.data||[]).map(x=>'<div class="item" style="display:block"><b>'+(x.status==="closed"?"✅ تم الرد":"⏳ قيد المراجعة")+'</b> <small>• '+new Date(x.created_at).toLocaleDateString("ar")+(x.order_ref?' • طلب #'+esc(x.order_ref):'')+'</small><div style="margin-top:4px">'+esc(x.message)+'</div>'+(x.reply?'<div class="note" style="margin-top:6px">'+esc(x.reply)+'</div>':'')+'</div>').join("")||'<div class="note">ما في شكاوى سابقة</div>')+'</div>');
+  $("cfs").onclick = async ()=>{
+    const m = $("cfm").value.trim(); if(m.length<5) return toast("اكتب تفاصيل الشكوى");
+    const {error} = await sb.from("complaints").insert({user_id:me.id, order_ref:$("cfo").value.trim()||null, message:m});
+    if(error) return toast("تعذّر الإرسال"); toast("وصلت شكواك، منرد عليك بأقرب وقت"); openComplaints();
+  };
+}
+window.openComplaints = openComplaints;
+[["🎁","أكواد الهدايا",openGift],["📨","الشكاوى",openComplaints]].forEach(x=>{
+  const b = document.createElement("button"); b.className = "mi"; b.innerHTML = '<span style="font-size:20px;width:20px;text-align:center">'+x[0]+'</span><span>'+x[1]+'</span>';
+  b.onclick = ()=>{ toggleMenu(false); x[2](); }; $("mOrders").before(b); });
+if(sb) setTimeout(async ()=>{
+  try{ const r = await sb.from("settings").select("value").eq("key","welcome").maybeSingle(), w = JSON.parse(r.data.value);
+    if(w && w.b && localStorage.getItem("u0_wv")!==String(w.v) && !document.getElementById("overlay").classList.contains("show")){
+      localStorage.setItem("u0_wv",String(w.v)); openSheet(w.t||"أهلاً بك 👋",'<div class="note" style="white-space:pre-wrap">'+esc(w.b)+'</div><button class="submit" id="wOk">حسناً</button>'); $("wOk").onclick = closeSheet; } }catch(e){}
+},1200);
+let chk = null; const _rub = refreshUser;
+refreshUser = function(){ _rub();
+  if(me && sb && chk!==me.id){ chk = me.id; sb.from("profiles").select("banned").eq("id",me.id).maybeSingle().then(r=>{ if(r.data && r.data.banned) openSheet("حسابك موقوف ⛔",'<div class="note">تم إيقاف حسابك. تواصل مع الدعم لمعرفة السبب.</div>'); }).catch(()=>{}); } };
+refreshUser();
+if(/[?&]complaints\b/.test(location.search)) setTimeout(()=>{ if(me) openComplaints(); },3000);
 })();
 </script>
 </body>

@@ -151,7 +151,7 @@ async function render(){
     });
   }
   if(tabName==="orders"){
-    const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,supplier_product_id,note,profiles(email)").order("id",{ascending:false}).limit(100);
+    const {data,error} = await sb.from("orders").select("id,game,product_name,price,player_id,status,created_at,supplier_product_id,note,profiles(email)").order("id",{ascending:false}).limit(500);
     if(error) return fail(error);
     v.innerHTML = data.map(o=>
       '<div class="card"><div class="row"><b>#'+o.id+' — '+esc(o.product_name)+'</b><span class="st">'+ST[o.status]+'</span></div>'+
@@ -301,6 +301,231 @@ render = async function(){
     $("il").querySelectorAll("select").forEach(se=>se.onchange = async ()=>{ if(se.value) M[se.dataset.c] = se.value; else delete M[se.dataset.c]; const {error} = await sb.from("settings").upsert({key:"input_types",value:JSON.stringify(M)}); if(error) fail(error); }); };
   $("ifl").oninput = draw; draw();
 };
+})();
+
+/* تبويبات: إعدادات الموقع + طرق الدفع */
+(function(){
+const bar=document.querySelector(".tabs"), hx=/^#[0-9a-fA-F]{6}$/;
+const mk=(t,n)=>{ const b=document.createElement("button"); b.textContent=n; bar.appendChild(b); b.onclick=()=>{ tabName=t; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b)); render(); }; };
+mk("cfg","الموقع"); mk("pm","طرق الدفع");
+const _r=render;
+render=async function(){ if(tabName==="cfg") return cfgView(); if(tabName==="pm") return pmView(); return _r(); };
+const fld=(id,l,val,ph,ltr)=>'<b>'+l+'</b><input id="'+id+'" value="'+esc(val||"")+'" placeholder="'+ph+'"'+(ltr?' dir="ltr"':'')+'>';
+async function cfgView(){
+  const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","site_config").maybeSingle();
+  let c={}; try{ c=JSON.parse(data.value)||{}; }catch(e){}
+  v.innerHTML='<div class="card"><b>اللون الأساسي</b><input id="c1" type="color" value="'+(hx.test(c.main)?c.main:"#b3001b")+'" style="height:44px;padding:2px">'+
+   '<b>اللون الثاني (الفاتح)</b><input id="c2" type="color" value="'+(hx.test(c.main2)?c.main2:"#e01e37")+'" style="height:44px;padding:2px">'+
+   fld("w1","واتساب الأساسي (أرقام فقط مع رمز الدولة)",c.wa_main,"963967340635",1)+fld("w2","رقم التواصل الثاني",c.wa_second,"963936656311",1)+
+   fld("wc","رابط قناة واتساب",c.wa_channel,"https://...",1)+fld("tg","رابط تيليجرام",c.tg_channel,"https://t.me/...",1)+fld("ig","رابط انستغرام",c.ig,"https://...",1)+
+   '<button id="cs" style="width:100%">حفظ</button><button class="gray" id="cx" style="width:100%;margin-top:8px">رجوع للقيم الافتراضية</button><div class="muted" style="margin-top:8px">فاضي = القيمة الافتراضية. التغيير بيبين عند الزبائن بأول فتحة جديدة.</div></div>';
+  const save=async o=>{ const {error}=await sb.from("settings").upsert({key:"site_config",value:JSON.stringify(o)}); if(error) return fail(error); alert("تم الحفظ"); cfgView(); };
+  $("cs").onclick=()=>save({main:$("c1").value,main2:$("c2").value,wa_main:$("w1").value.replace(/\D/g,""),wa_second:$("w2").value.replace(/\D/g,""),wa_channel:$("wc").value.trim(),tg_channel:$("tg").value.trim(),ig:$("ig").value.trim()});
+  $("cx").onclick=()=>{ if(confirm("استرجاع كل القيم الافتراضية؟")) save({}); };
+}
+const kopt=k=>'<option value="code"'+(k!=="qr"?" selected":"")+'>كود/رقم</option><option value="qr"'+(k==="qr"?" selected":"")+'>QR</option>';
+async function pmView(){
+  const v=$("view"); const {data,error}=await sb.from("deposit_methods").select("*").order("sort").order("id"); if(error) return fail(error);
+  v.innerHTML='<div class="card"><b>إضافة طريقة دفع</b><input id="pn" placeholder="الاسم (مثال: شام كاش)"><input id="pa" dir="ltr" placeholder="رقم الحساب / الكود"><input id="pm" type="number" placeholder="أقل مبلغ بالليرة"><select id="pk">'+kopt("code")+'</select><button id="pd" style="width:100%">إضافة</button></div>'+
+   (data||[]).map(m=>'<div class="card" data-m="'+m.id+'"><b>'+esc(m.name)+(m.active?"":" (موقوفة)")+'</b><input class="n" value="'+esc(m.name)+'"><input class="a" dir="ltr" value="'+esc(m.account)+'"><input class="mn" type="number" value="'+esc(m.min_syp)+'" placeholder="أقل مبلغ"><input class="so" type="number" value="'+esc(m.sort)+'" placeholder="الترتيب"><select class="k">'+kopt(m.kind)+'</select><div class="two"><button class="sv">حفظ</button><button class="gray tg">'+(m.active?"إيقاف":"تفعيل")+'</button></div><button class="gray dl" style="width:100%;margin-top:6px">حذف</button></div>').join("");
+  $("pd").onclick=async()=>{ const n=$("pn").value.trim(); if(!n) return alert("اكتب الاسم");
+    const {error}=await sb.from("deposit_methods").insert({name:n,account:$("pa").value.trim(),min_syp:+$("pm").value||0,kind:$("pk").value,active:true,sort:(data||[]).length+1}); if(error) return fail(error); pmView(); };
+  v.querySelectorAll("[data-m]").forEach(d=>{ const id=+d.dataset.m, q=s=>d.querySelector(s), up=async o=>{ const {error}=await sb.from("deposit_methods").update(o).eq("id",id); if(error) return fail(error); pmView(); };
+    q(".sv").onclick=()=>up({name:q(".n").value.trim(),account:q(".a").value.trim(),min_syp:+q(".mn").value||0,sort:+q(".so").value||0,kind:q(".k").value});
+    q(".tg").onclick=()=>up({active:!(data.find(x=>x.id===id)||{}).active});
+    q(".dl").onclick=async()=>{ if(!confirm("حذف نهائي؟ (إذا في إيداعات مرتبطة استخدم إيقاف)")) return; const {error}=await sb.from("deposit_methods").delete().eq("id",id); if(error) return fail(error); pmView(); }; });
+}
+})();
+
+/* تبويب أدوات: إحصائيات + بحث زبون + تصدير + صيانة + عدادات */
+(function(){
+const bar=document.querySelector(".tabs"), nb=document.createElement("button"); nb.textContent="أدوات"; bar.appendChild(nb);
+nb.onclick=()=>{ tabName="tools"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r=render; render=async function(){ if(tabName==="tools") return toolsView(); return _r(); };
+const cnt=async(t,f)=>{ let q=sb.from(t).select("id",{count:"exact",head:true}); if(f) q=f(q); const r=await q; return r.count||0; };
+const money=n=>(+n||0).toFixed(2)+" $";
+async function toolsView(){
+  const v=$("view"), d0=new Date(); d0.setHours(0,0,0,0);
+  v.innerHTML='<div class="card"><b>إحصائيات سريعة</b><div id="st" class="muted">جاري التحميل...</div></div>'+
+   '<div class="card"><b>بحث عن زبون</b><input id="cq" placeholder="الإيميل أو الرقم #" dir="ltr"><button id="cg" style="width:100%">بحث</button><div id="cr"></div></div>'+
+   '<div class="card"><b>تصدير (ملف CSV يفتح بإكسل)</b><div class="two"><button class="gray" data-x="profiles">المستخدمون</button><button class="gray" data-x="orders">الطلبات</button></div><button class="gray" data-x="deposits" style="width:100%;margin-top:6px">الإيداعات</button></div>'+
+   '<div class="card"><b>وضع الصيانة</b><select id="mt"><option value="0">مغلق (الموقع شغال)</option><option value="1">مفعّل (الزبائن بيشوفوا رسالة فقط)</option></select><input id="mm" placeholder="رسالة الصيانة"><button id="ms" style="width:100%">حفظ</button><div class="muted">لوحة الأدمن ما بتتأثر.</div></div>';
+  Promise.all([cnt("profiles"),cnt("orders"),cnt("orders",q=>q.eq("status","pending")),cnt("orders",q=>q.eq("status","done")),cnt("orders",q=>q.gte("created_at",d0.toISOString())),cnt("deposits",q=>q.in("status",["pending","review"])),sb.from("profiles").select("balance").limit(5000)]).then(r=>{
+    const tot=(r[6].data||[]).reduce((s,x)=>s+(+x.balance||0),0);
+    $("st").innerHTML='المستخدمون: <b>'+r[0]+'</b><br>كل الطلبات: <b>'+r[1]+'</b> (تم: '+r[3]+' | قيد التنفيذ: '+r[2]+')<br>طلبات اليوم: <b>'+r[4]+'</b><br>إيداعات مفتوحة: <b>'+r[5]+'</b><br>مجموع أرصدة الزبائن: <b>'+money(tot)+'</b>';
+  }).catch(e=>{ $("st").textContent="تعذّر التحميل"; });
+  $("cg").onclick=async()=>{
+    const s=$("cq").value.trim(), o=$("cr"); if(!s) return; o.innerHTML='<div class="muted">...</div>'; let p=null;
+    if(/^#?\d+$/.test(s)){ const r=await sb.from("profiles").select("id,email,balance,public_id").eq("public_id",+s.replace("#","")); p=r.data&&r.data[0]; }
+    if(!p){ const r=await sb.from("profiles").select("id,email,balance").ilike("email",s); p=r.data&&r.data[0]; }
+    if(!p){ o.innerHTML='<div class="muted">ما لقيت زبون</div>'; return; }
+    const [od,dp]=await Promise.all([sb.from("orders").select("id,product_name,price,status,created_at").eq("user_id",p.id).order("id",{ascending:false}).limit(10), sb.from("deposits").select("id,amount_usd,status,created_at").eq("user_id",p.id).order("id",{ascending:false}).limit(10)]);
+    const row=x=>'<div class="muted" dir="auto">#'+x.id+" - "+esc(x.product_name||"إيداع")+" - "+esc(x.price!=null?x.price:x.amount_usd)+"$ - "+esc(ST[x.status]||x.status)+" - "+esc(String(x.created_at).slice(0,10))+'</div>';
+    o.innerHTML='<div style="margin:8px 0"><b dir="ltr">'+esc(p.email)+'</b><br>الرصيد: <b>'+money(p.balance)+'</b></div><b>آخر الطلبات</b>'+((od.data||[]).map(row).join("")||'<div class="muted">لا يوجد</div>')+'<b>آخر الإيداعات</b>'+((dp.data||[]).map(row).join("")||'<div class="muted">لا يوجد</div>');
+  };
+  v.querySelectorAll("[data-x]").forEach(b=>b.onclick=async()=>{
+    const {data,error}=await sb.from(b.dataset.x).select("*").order("id",{ascending:false}).limit(5000); if(error) return fail(error);
+    if(!data||!data.length) return alert("لا يوجد بيانات");
+    const keys=Object.keys(data[0]), cell=x=>{ let s=x==null?"":(typeof x==="object"?JSON.stringify(x):String(x)); if(/^[=+\-@]/.test(s)) s="'"+s; return '"'+s.replace(/"/g,'""')+'"'; };
+    const csv="\ufeff"+[keys.map(cell).join(",")].concat(data.map(r=>keys.map(k=>cell(r[k])).join(","))).join("\r\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=b.dataset.x+"-"+new Date().toISOString().slice(0,10)+".csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  });
+  sb.from("settings").select("key,value").in("key",["maintenance","maintenance_msg"]).then(r=>{ const o={}; (r.data||[]).forEach(x=>o[x.key]=x.value); $("mt").value=o.maintenance==="1"?"1":"0"; $("mm").value=o.maintenance_msg||""; });
+  $("ms").onclick=async()=>{ const {error}=await sb.from("settings").upsert([{key:"maintenance",value:$("mt").value},{key:"maintenance_msg",value:$("mm").value.trim()}]); if(error) return fail(error); alert("تم الحفظ"); };
+}
+/* عدادات على التبويبات */
+async function badges(){
+  if($("app").style.display!=="block") return;
+  try{ const [o,d]=await Promise.all([cnt("orders",q=>q.eq("status","pending")),cnt("deposits",q=>q.in("status",["pending","review"]))]);
+    [["orders",o],["deps",d]].forEach(([t,n])=>{ const b=document.querySelector('.tabs button[data-t="'+t+'"]'); if(!b) return; if(!b.dataset.base) b.dataset.base=b.textContent; b.textContent=b.dataset.base+(n?" ("+n+")":""); }); }catch(e){}
+}
+setInterval(badges,60000); setTimeout(badges,4000);
+})();
+
+/* ===== تبويب التقارير + تنبيه صوتي للطلبات الجديدة ===== */
+(function(){
+const nb = document.createElement("button"); nb.textContent = "التقارير"; document.querySelector(".tabs").appendChild(nb);
+nb.onclick = ()=>{ tabName = "rep"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const m = n=>(+n||0).toFixed(2)+" $", key = d=>{ const z = new Date(d); return z.getFullYear()+"-"+String(z.getMonth()+1).padStart(2,"0")+"-"+String(z.getDate()).padStart(2,"0"); };
+const _r = render; render = async function(){ if(tabName!=="rep") return _r(); repView(7); };
+async function repView(days){
+  const v = $("view"); v.innerHTML = '<div class="muted">جاري التحميل...</div>';
+  const from = new Date(); from.setHours(0,0,0,0); from.setDate(from.getDate()-(days-1)); const iso = from.toISOString();
+  const [o,d] = await Promise.all([sb.from("orders").select("user_id,product_name,price,status,created_at").gte("created_at",iso).order("id",{ascending:false}).limit(5000), sb.from("deposits").select("amount_usd,status,created_at").gte("created_at",iso).limit(5000)]);
+  if(o.error) return fail(o.error);
+  const O = o.data||[], D = d.data||[], ok = O.filter(x=>x.status==="done");
+  const sum = (a,f)=>a.reduce((s,x)=>s+(+x[f]||0),0), rev = sum(ok,"price"), dep = sum(D.filter(x=>x.status==="done"),"amount_usd");
+  const day = {}; for(let i=0;i<days;i++){ const x = new Date(from); x.setDate(x.getDate()+i); day[key(x)] = 0; }
+  ok.forEach(x=>{ const k = key(x.created_at); if(k in day) day[k] += +x.price||0; });
+  const mx = Math.max(1,...Object.values(day));
+  const grp = (a,f)=>{ const g = {}; a.forEach(x=>{ const k = x[f]||"-"; (g[k] = g[k]||{n:0,s:0}); g[k].n++; g[k].s += +x.price||0; }); return Object.entries(g).sort((p,q)=>q[1].s-p[1].s).slice(0,5); };
+  const tp = grp(ok,"product_name"), tc = grp(ok,"user_id");
+  let em = {}; if(tc.length){ const r = await sb.from("profiles").select("id,email").in("id",tc.map(x=>x[0])); (r.data||[]).forEach(x=>em[x.id] = x.email); }
+  const list = (a,nm)=>a.map(x=>'<div class="row" style="display:flex;justify-content:space-between;gap:8px;padding:4px 0"><span dir="auto">'+esc(nm(x[0]))+' <span class="muted">('+x[1].n+')</span></span><b>'+m(x[1].s)+'</b></div>').join("") || '<div class="muted">لا يوجد</div>';
+  v.innerHTML = '<div class="two" style="margin-bottom:8px">'+[[1,"اليوم"],[7,"7 أيام"],[30,"30 يوم"]].map(p=>'<button class="'+(p[0]==days?"":"gray")+'" data-p="'+p[0]+'">'+p[1]+'</button>').join("")+'</div>'
+   +'<div class="card"><b>الملخص</b><br>المبيعات المكتملة: <b>'+m(rev)+'</b> ('+ok.length+' طلب)<br>الطلبات المرفوضة: <b>'+O.filter(x=>x.status==="rejected").length+'</b><br>قيد التنفيذ: <b>'+O.filter(x=>x.status==="pending").length+'</b><br>إيداعات مكتملة: <b>'+m(dep)+'</b></div>'
+   +'<div class="card"><b>المبيعات اليومية</b><div style="display:flex;align-items:flex-end;gap:3px;height:110px;margin-top:8px">'+Object.keys(day).map(k=>'<div title="'+k+': '+m(day[k])+'" style="flex:1;background:var(--main,#e11d48);border-radius:4px 4px 0 0;height:'+Math.max(2,day[k]/mx*100)+'%"></div>').join("")+'</div></div>'
+   +'<div class="card"><b>أكثر المنتجات مبيعاً</b>'+list(tp,x=>x)+'</div><div class="card"><b>أكثر الزبائن شراءً</b>'+list(tc,x=>em[x]||x)+'</div>';
+  v.querySelectorAll("[data-p]").forEach(b=>b.onclick = ()=>repView(+b.dataset.p));
+}
+/* تنبيه صوتي */
+let on = false, last = null, ctx = null; try{ on = localStorage.getItem("u0_snd")==="1"; }catch(e){}
+const ab = document.createElement("button"); ab.className = "gray"; ab.style.cssText = "margin-top:10px;width:100%"; $("out").before(ab);
+const txt = ()=>ab.textContent = on ? "🔔 التنبيه الصوتي: مفعّل" : "🔕 التنبيه الصوتي: متوقف";
+function beep(){ try{ ctx = ctx||new (window.AudioContext||window.webkitAudioContext)(); ctx.resume(); [0,.3].forEach(t=>{ const o = ctx.createOscillator(), g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = 880; g.gain.value = .15; o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+.2); }); }catch(e){} }
+ab.onclick = ()=>{ on = !on; last = null; try{ localStorage.setItem("u0_snd",on?"1":"0"); }catch(e){} if(on) beep(); txt(); }; txt();
+async function poll(){
+  if(!on || $("app").style.display!=="block") return;
+  try{ const [a,b] = await Promise.all([sb.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"), sb.from("deposits").select("id",{count:"exact",head:true}).in("status",["pending","review"])]);
+    const n = (a.count||0)+(b.count||0); if(last!==null && n>last){ beep(); document.title = "🔔 جديد! | لوحة الإدارة"; } last = n; }catch(e){}
+}
+setInterval(poll,30000); setTimeout(poll,5000);
+document.addEventListener("click",()=>{ if(document.title.indexOf("🔔")===0) document.title = "لوحة الإدارة | ULTRA0"; });
+})();
+
+/* ===== بحث وفلتر الطلبات ===== */
+(function(){
+const _r = render;
+render = async function(){
+  await _r(); if(tabName!=="orders") return;
+  const v = $("view"); if(!v.querySelector(".card") || $("ofq")) return;
+  v.insertAdjacentHTML("afterbegin",'<div class="card"><input id="ofq" placeholder="بحث: رقم الطلب، المنتج، الإيميل، ID اللاعب"><select id="ofs"><option value="">كل الحالات</option>'+Object.values(ST).map(s=>'<option>'+esc(s)+'</option>').join("")+'</select><div id="ofc" class="muted"></div></div>');
+  const run = ()=>{ const q = $("ofq").value.trim().toLowerCase(), s = $("ofs").value; let n = 0;
+    [...v.children].slice(1).forEach(c=>{ const ok = (!s || (c.querySelector(".st")||{}).textContent===s) && (!q || c.textContent.toLowerCase().includes(q)); c.style.display = ok ? "" : "none"; if(ok) n++; });
+    $("ofc").textContent = n+" طلب"; };
+  $("ofq").oninput = run; $("ofs").onchange = run; run();
+};
+})();
+
+/* ===== تبويب ذكاء المتجر: ساعات الذروة + الانتظار + إشارات الاحتيال ===== */
+(function(){
+const nb = document.createElement("button"); nb.textContent = "ذكاء المتجر"; document.querySelector(".tabs").appendChild(nb);
+nb.onclick = ()=>{ tabName = "ai"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r = render; render = async function(){ if(tabName!=="ai") return _r(); aiView(); };
+async function aiView(){
+  const v = $("view"); v.innerHTML = '<div class="muted">جاري التحليل...</div>';
+  const from = new Date(Date.now()-30*864e5).toISOString();
+  const [o,d] = await Promise.all([sb.from("orders").select("user_id,player_id,status,price,created_at").gte("created_at",from).order("id",{ascending:false}).limit(3000), sb.from("deposits").select("user_id,status,created_at").gte("created_at",from).limit(2000)]);
+  if(o.error) return fail(o.error);
+  const O = o.data||[], D = d.data||[], DN = ["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"];
+  const Hm = Array.from({length:7},()=>Array(24).fill(0)); O.forEach(x=>{ const t = new Date(x.created_at); Hm[t.getDay()][t.getHours()]++; });
+  const mx = Math.max(1,...Hm.flat()), hr = Array(24).fill(0); Hm.forEach(r=>r.forEach((c,j)=>hr[j]+=c)); const bh = hr.indexOf(Math.max(...hr));
+  const heat = '<div style="overflow-x:auto"><div style="min-width:520px;display:grid;grid-template-columns:44px repeat(24,1fr);gap:2px;font-size:10px">'+
+    '<span></span>'+Array.from({length:24},(_,j)=>'<span style="text-align:center">'+j+'</span>').join("")+
+    Hm.map((r,i)=>'<span>'+DN[i]+'</span>'+r.map((c,j)=>'<div title="'+DN[i]+' '+j+':00 — '+c+' طلب" style="height:16px;border-radius:3px;background:rgba(225,29,72,'+(c?(.12+.88*c/mx).toFixed(2):.05)+')"></div>').join("")).join("")+'</div></div>';
+  const pend = O.filter(x=>x.status==="pending").map(x=>(Date.now()-new Date(x.created_at))/6e4), late = pend.filter(m=>m>30).length;
+  const byP = {}; O.forEach(x=>{ const p = (x.player_id||"").trim(); if(!p||p==="-") return; (byP[p] = byP[p]||new Set()).add(x.user_id); });
+  const shared = Object.entries(byP).filter(e=>e[1].size>=3).sort((a,b)=>b[1].size-a[1].size).slice(0,8);
+  const U = {}; O.forEach(x=>{ const u = U[x.user_id] = U[x.user_id]||{n:0,rej:0,t:[]}; u.n++; if(x.status==="rejected") u.rej++; u.t.push(+new Date(x.created_at)); });
+  const rejU = Object.entries(U).filter(e=>e[1].n>=3 && e[1].rej/e[1].n>=.6).slice(0,8);
+  const burst = Object.entries(U).filter(e=>{ const t = e[1].t.sort((a,b)=>a-b); for(let i=0;i+4<t.length;i++) if(t[i+4]-t[i]<6e5) return true; return false; }).slice(0,8);
+  const DR = {}; D.forEach(x=>{ if(x.status==="rejected") DR[x.user_id] = (DR[x.user_id]||0)+1; }); const depU = Object.entries(DR).filter(e=>e[1]>=3).slice(0,8);
+  const ids = [...new Set([...rejU.map(e=>e[0]),...burst.map(e=>e[0]),...depU.map(e=>e[0]),...shared.flatMap(e=>[...e[1]])])].filter(Boolean), em = {};
+  if(ids.length){ const r = await sb.from("profiles").select("id,email").in("id",ids.slice(0,200)); (r.data||[]).forEach(x=>em[x.id] = x.email); }
+  const E = u=>'<span dir="ltr">'+esc(em[u]||u)+'</span>';
+  const sec = (t,rows)=>'<div class="card"><b>'+t+'</b>'+(rows.length?rows.map(r=>'<div style="padding:4px 0">'+r+'</div>').join(""):'<div class="muted">لا شيء مريب ✅</div>')+'</div>';
+  v.innerHTML = '<div class="card"><b>⏱ الانتظار الآن</b><br>طلبات قيد التنفيذ: <b>'+pend.length+'</b> • متأخرة أكثر من 30 دقيقة: <b style="color:'+(late?"#ff4d63":"inherit")+'">'+late+'</b>'+(pend.length?'<br>الأقدم ينتظر منذ <b>'+Math.round(Math.max(...pend))+'</b> دقيقة':'')+'</div>'+
+   '<div class="card"><b>🔥 ساعات الذروة (آخر 30 يوم)</b><div class="muted" style="margin:4px 0 8px">أكثر ساعة نشاطاً: <b>'+bh+':00</b> — كن متواجداً وجهّز العروض فيها</div>'+heat+'</div>'+
+   sec("🚩 ID لاعب مستخدم من 3 حسابات أو أكثر",shared.map(e=>'<span dir="ltr">'+esc(e[0])+'</span> — '+[...e[1]].slice(0,4).map(E).join("، "))) +
+   sec("🚩 نسبة رفض عالية (60%+ مع 3 طلبات)",rejU.map(e=>E(e[0])+' — '+e[1].rej+'/'+e[1].n)) +
+   sec("🚩 5 طلبات أو أكثر خلال 10 دقائق",burst.map(e=>E(e[0]))) +
+   sec("🚩 3 إيداعات مرفوضة أو أكثر",depU.map(e=>E(e[0])+' — '+e[1]));
+}
+})();
+
+/* ===== تبويبات: إشعار جماعي، أكواد الهدايا، الحظر، الشكاوى ===== */
+(function(){
+const bar = document.querySelector(".tabs"), V = {}, _r = render;
+function addTab(label,key,fn){ const b = document.createElement("button"); b.textContent = label; bar.appendChild(b);
+  b.onclick = ()=>{ tabName = key; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b)); render(); }; V[key] = fn; }
+render = async function(){ if(V[tabName]) return V[tabName](); return _r(); };
+const dt = s=>new Date(s).toLocaleString("ar"), load = ()=>{ $("view").innerHTML = '<div class="muted">جاري التحميل...</div>'; };
+const emails = async ids=>{ const m = {}; ids = [...new Set(ids)].filter(Boolean); if(ids.length){ const r = await sb.from("profiles").select("id,email").in("id",ids.slice(0,300)); (r.data||[]).forEach(x=>m[x.id] = x.email); } return m; };
+
+addTab("إشعار جماعي","bc",async function bc(){
+  load(); const v = $("view");
+  const [c,h,w] = await Promise.all([sb.from("push_subscriptions").select("id",{count:"exact",head:true}), sb.from("push_broadcasts").select("title,sent,target,created_at").order("id",{ascending:false}).limit(10), sb.from("settings").select("value").eq("key","welcome").maybeSingle()]);
+  let wl = {}; try{ wl = JSON.parse(w.data.value)||{}; }catch(e){}
+  v.innerHTML = '<div class="card"><b>📣 إشعار جماعي</b><div class="muted">الأجهزة المشتركة: <b>'+(c.count||0)+'</b></div><input id="bt" maxlength="80" placeholder="العنوان (مثال: عرض اليوم 🔥)"><textarea id="bb" rows="3" maxlength="300" placeholder="نص الإشعار"></textarea><input id="be" dir="ltr" placeholder="إيميل زبون معيّن (فاضي = للجميع)"><button id="bs" style="width:100%">إرسال</button></div>'+
+   '<div class="card"><b>👋 رسالة الترحيب</b><div class="muted">نافذة بتظهر مرة وحدة لكل زبون. كل ما تحفظ نص جديد بتظهر من جديد.</div><input id="wt" placeholder="العنوان" value="'+esc(wl.t||"")+'"><textarea id="wb" rows="3" placeholder="النص (فاضي = إيقاف)">'+esc(wl.b||"")+'</textarea><button id="ws" style="width:100%">حفظ ونشر</button></div>'+
+   '<div class="card"><b>آخر الإرسالات</b>'+((h.data||[]).map(x=>'<div style="padding:4px 0">'+esc(x.title)+' <span class="muted">• '+x.sent+' جهاز • '+esc(x.target)+' • '+dt(x.created_at)+'</span></div>').join("")||'<div class="muted">لا شيء بعد</div>')+'</div>';
+  $("bs").onclick = async ()=>{
+    const t = $("bt").value.trim(), b = $("bb").value.trim(), e = $("be").value.trim(); if(!t||!b) return alert("اكتب العنوان والنص");
+    if(!confirm(e ? "إرسال إلى "+e+"؟" : "إرسال لكل الأجهزة ("+(c.count||0)+")؟")) return; $("bs").disabled = true;
+    const {data,error} = await sb.functions.invoke("send-push",{body:{broadcast:{title:t,body:b,email:e||undefined}}}); $("bs").disabled = false;
+    if(error || (data && data.error)) return alert("فشل الإرسال: "+((data && data.error) || error.message)); alert("تم الإرسال إلى "+data.sent+" جهاز"); bc();
+  };
+  $("ws").onclick = async ()=>{ const t = $("wt").value.trim(), b = $("wb").value.trim();
+    const {error} = await sb.from("settings").upsert({key:"welcome",value:JSON.stringify(b?{t,b,v:Date.now()}:{})}); if(error) return fail(error); alert(b?"تم النشر":"تم الإيقاف"); };
+});
+
+addTab("أكواد الهدايا","gift",async function gift(){
+  load(); const v = $("view"), r = await sb.from("gift_codes").select("*").order("created_at",{ascending:false}).limit(60); if(r.error) return fail(r.error);
+  v.innerHTML = '<div class="card"><b>🎁 كود جديد</b><input id="ga" type="number" step="0.01" placeholder="المبلغ بالدولار"><input id="gu" type="number" placeholder="عدد مرات الاستخدام (كل شخص مرة وحدة)" value="1"><input id="gk" dir="ltr" placeholder="الكود (فاضي = توليد تلقائي)"><button id="gs" style="width:100%">إنشاء</button></div>'+
+   (r.data||[]).map(x=>'<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b dir="ltr">'+esc(x.code)+'</b><div class="muted">'+x.amount+' $ • '+x.used+'/'+x.max_uses+(x.active?'':' • موقوف')+'</div></div><div><button class="gray" data-t="'+esc(x.code)+'" data-a="'+(x.active?0:1)+'">'+(x.active?'إيقاف':'تفعيل')+'</button> <button class="gray" data-d="'+esc(x.code)+'">حذف</button></div></div>').join("");
+  $("gs").onclick = async ()=>{ const a = +$("ga").value, u = +$("gu").value||1; if(!(a>0)) return alert("اكتب المبلغ");
+    const code = ($("gk").value.trim()||Math.random().toString(36).slice(2,10)).toUpperCase(); const {error} = await sb.from("gift_codes").insert({code,amount:a,max_uses:u}); if(error) return fail(error); alert("تم إنشاء الكود: "+code); gift(); };
+  v.querySelectorAll("[data-t]").forEach(b=>b.onclick = async ()=>{ await sb.from("gift_codes").update({active:b.dataset.a==="1"}).eq("code",b.dataset.t); gift(); });
+  v.querySelectorAll("[data-d]").forEach(b=>b.onclick = async ()=>{ if(confirm("حذف الكود؟")){ await sb.from("gift_codes").delete().eq("code",b.dataset.d); gift(); } });
+});
+
+addTab("الحظر","ban",async function ban(q){
+  load(); const v = $("view"); q = typeof q==="string" ? q : "";
+  let s = sb.from("profiles").select("id,email,banned").limit(20); s = q ? s.ilike("email","%"+q+"%") : s.eq("banned",true); const r = await s; if(r.error) return fail(r.error);
+  v.innerHTML = '<div class="card"><b>⛔ حظر مستخدم</b><div class="muted">المحظور ما بيقدر يشتري ولا يرسل إيداع. ابحث بالإيميل:</div><input id="bq" dir="ltr" value="'+esc(q)+'" placeholder="email"><button id="bg" style="width:100%">بحث</button></div><div class="muted" style="margin:6px 0">'+(q?'نتائج البحث':'المحظورون حالياً')+'</div>'+
+   ((r.data||[]).map(x=>'<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span dir="ltr">'+esc(x.email)+'</span><button class="gray" data-u="'+x.id+'" data-b="'+(x.banned?0:1)+'">'+(x.banned?'رفع الحظر':'حظر')+'</button></div>').join("")||'<div class="muted">لا نتائج</div>');
+  $("bg").onclick = ()=>ban($("bq").value.trim());
+  v.querySelectorAll("[data-u]").forEach(b=>b.onclick = async ()=>{ if(b.dataset.b==="1" && !confirm("حظر هذا المستخدم؟")) return; const {error} = await sb.from("profiles").update({banned:b.dataset.b==="1"}).eq("id",b.dataset.u); if(error) return fail(error); ban(q); });
+});
+
+addTab("الشكاوى","cmp",async function cmp(){
+  load(); const v = $("view"), r = await sb.from("complaints").select("*").order("id",{ascending:false}).limit(60); if(r.error) return fail(r.error);
+  const L = (r.data||[]).sort((a,b)=>(a.status==="open"?0:1)-(b.status==="open"?0:1)), em = await emails(L.map(x=>x.user_id));
+  v.innerHTML = L.map(x=>'<div class="card"><b>'+(x.status==="open"?"⏳ مفتوحة":"✅ مغلقة")+'</b> <span class="muted">#'+x.id+' • <span dir="ltr">'+esc(em[x.user_id]||x.user_id)+'</span>'+(x.order_ref?' • طلب #'+esc(x.order_ref):'')+' • '+dt(x.created_at)+'</span><div style="margin:6px 0">'+esc(x.message)+'</div>'+
+    (x.status==="open"?'<textarea data-r="'+x.id+'" rows="2" placeholder="اكتب الرد (بيوصل للزبون كإشعار)"></textarea><button data-s="'+x.id+'" style="width:100%">رد وإغلاق</button>':'<div class="muted">الرد: '+esc(x.reply||"-")+'</div>')+'</div>').join("")||'<div class="muted">لا شكاوى</div>';
+  v.querySelectorAll("[data-s]").forEach(b=>b.onclick = async ()=>{ const t = v.querySelector('[data-r="'+b.dataset.s+'"]').value.trim(); if(!t) return alert("اكتب الرد");
+    const {error} = await sb.from("complaints").update({reply:t,status:"closed"}).eq("id",b.dataset.s); if(error) return fail(error); cmp(); });
+});
 })();
 </script>
 </body>
