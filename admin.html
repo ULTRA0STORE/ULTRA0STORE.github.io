@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>لوحة الإدارة | ULTRA0</title>
+<script>
+/* لوحة الإدارة صارت جوا الموقع: إذا انفتحت لحالها رجّعها للموقع */
+(function(){ var q=new URLSearchParams(location.search); if(!q.has("embed")){ location.replace("./#admin"); return; } document.documentElement.classList.add("embed"); })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
@@ -23,6 +27,15 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .st{padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
 .vip{display:inline-block;padding:1px 10px;border-radius:999px;background:linear-gradient(135deg,#ffe27a,#f2b500);color:#3a2a00;font-weight:800;font-size:12px}
+
+/* وضع الدمج داخل الموقع */
+:root[data-theme=light]{--bg:#faf3f3;--card:#fff;--line:#ecc9ce;--text:#2a0b10;--muted:#7a5a5f}
+:root[data-theme=light] button.gray{background:var(--card);color:var(--text)}
+:root[data-theme=light] .tabs button:not(.on){color:var(--text)}
+.embed body{padding:4px 14px calc(30px + env(safe-area-inset-bottom,0px))}
+.embed .box{max-width:900px}
+.embed h1,.embed #out{display:none}
+.embed{padding:0}
 </style>
 </head>
 <body><div class="box">
@@ -526,6 +539,134 @@ addTab("الشكاوى","cmp",async function cmp(){
   v.querySelectorAll("[data-s]").forEach(b=>b.onclick = async ()=>{ const t = v.querySelector('[data-r="'+b.dataset.s+'"]').value.trim(); if(!t) return alert("اكتب الرد");
     const {error} = await sb.from("complaints").update({reply:t,status:"closed"}).eq("id",b.dataset.s); if(error) return fail(error); cmp(); });
 });
+})();
+
+/* ===== تنقّل لوحة الإدارة: عنوان + زر ⋮ + قائمة أقسام مجمّعة (مثل التصميم المطلوب) ===== */
+(function(){
+const P={
+ chart:'<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+ report:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+ spark:'<path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/>',
+ bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+ alert:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4"/><path d="M12 15h.01"/>',
+ wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+ card:'<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
+ coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+ users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+ grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+ box:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+ input:'<path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/>',
+ mega:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+ trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+ gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 11 5 12 8c1-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+ bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+ link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+ wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+ search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+ x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+ check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+ xc:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+ cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>'
+};
+const I=(n,s)=>'<svg width="'+(s||20)+'" height="'+(s||20)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[n]+'</svg>';
+const dots='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+
+/* الأقسام بنفس ترتيب التصميم — b = نص زر التبويب الموجود */
+const G=[
+ ["نظرة عامة",[["stats","الإحصائيات","chart"],["rep","التقارير","report","التقارير"],["ai","ذكاء المتجر","spark","ذكاء المتجر"]]],
+ ["المبيعات",[["orders","الطلبات","bag","الطلبات"],["cmp","الشكاوى","alert","الشكاوى"]]],
+ ["المحفظة",[["deps","طلبات الإيداع","wallet","الإيداعات"],["pm","طرق الإيداع","card","طرق الدفع"],["sum","الرصيد والأرباح","coins","الملخص"]]],
+ ["المستخدمون",[["users","المستخدمون","users","المستخدمون"],["ban","الحظر","ban","الحظر"]]],
+ ["الكتالوج",[["cats","الأقسام","grid","الأقسام"],["products","المنتجات","box","المنتجات"],["ann","الشريط والإعلان","mega","الإعلان"],["inp","نوع الإدخال","input","نوع الإدخال"]]],
+ ["التسعير",[["vip","مستويات الخصم","trend","VIP"],["gift","أكواد الهدايا","gift","أكواد الهدايا"]]],
+ ["الدعم",[["bc","الإشعارات","bell","إشعار جماعي"]]],
+ ["المحتوى",[["welcome","رسالة الترحيب","spark","إشعار جماعي"]]],
+ ["النظام",[["cfg","إعدادات التطبيق","gear","الموقع"],["sup","ربط المزودين","link","المزوّد"],["tools","أدوات وصيانة","wrench","أدوات"]]]
+];
+const ALL=[]; G.forEach(g=>g[1].forEach(x=>ALL.push({k:x[0],n:x[1],i:x[2],b:x[3],g:g[0]})));
+
+const css=document.createElement("style");
+css.textContent=
+'.tabs{display:none!important}'+
+'.ahd{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px 12px;margin:0 0 12px}'+
+'.ahd small{display:block;color:var(--muted);font-size:13px}.ahd h2{font-size:22px;font-weight:800;line-height:1.3}'+
+'.akb{width:48px;height:48px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:var(--card)!important;border:1px solid var(--main)!important;color:var(--text)!important;flex:0 0 auto}'+
+'.asw{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center}.asw.show{display:flex}'+
+'.ash{background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:26px 26px 0 0;width:100%;max-width:760px;max-height:78vh;display:flex;flex-direction:column;animation:aup .22s ease}'+
+'@keyframes aup{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}'+
+'.asr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);color:var(--text)}'+
+'.asr input{flex:1;margin:0;background:none;border:0;padding:6px 0;font-size:16px;outline:none}'+
+'.asr button{background:none!important;border:0;padding:4px;color:var(--text)!important}'+
+'.asl{overflow-y:auto;padding:4px 14px calc(26px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}'+
+'.asg{font-weight:800;font-size:15px;margin:16px 4px 8px}'+
+'.asgr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}'+
+'.asi{display:flex;align-items:center;gap:10px;background:none!important;border:1px solid transparent;color:var(--text)!important;font-weight:600;font-size:15px;padding:12px 14px;border-radius:14px;text-align:right;width:100%}'+
+'.asi svg{flex:0 0 auto}.asi.on{background:color-mix(in srgb,var(--main) 28%,transparent)!important;border-color:color-mix(in srgb,var(--main2) 70%,transparent)}'+
+'.asn{color:var(--muted);text-align:center;padding:24px 0}'+
+'.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}'+
+'.sc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between}'+
+'.sc .t{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;color:var(--muted);font-size:14px;font-weight:600}'+
+'.sc .t svg{color:var(--main2)}.sc b{font-size:30px;font-weight:800;line-height:1.2;margin-top:8px}.sc small{color:var(--muted);font-size:12px}'+
+'.sc.w{grid-column:1/-1}';
+document.head.appendChild(css);
+
+const app=$("app"), view=$("view");
+const hd=document.createElement("div"); hd.className="ahd";
+hd.innerHTML='<div><small id="aG">نظرة عامة</small><h2 id="aT">الإحصائيات</h2></div><button class="akb" id="aKb" aria-label="الأقسام">'+dots+'</button>';
+app.insertBefore(hd,app.firstChild);
+const sw=document.createElement("div"); sw.className="asw"; sw.id="aSw";
+sw.innerHTML='<div class="ash" role="dialog" aria-label="أقسام لوحة الإدارة"><div class="asr">'+I("search")+'<input id="aQ" type="search" placeholder="ابحث عن قسم..."><button id="aX" aria-label="إغلاق">'+I("x",22)+'</button></div><div class="asl" id="aL"></div></div>';
+document.body.appendChild(sw);
+
+let cur="stats";
+function draw(){
+  const q=$("aQ").value.trim().toLowerCase();
+  const html=G.map(g=>{ const it=g[1].filter(x=>!q||x[1].toLowerCase().includes(q)||g[0].includes(q));
+    if(!it.length) return "";
+    return '<div class="asg">'+g[0]+'</div><div class="asgr">'+it.map(x=>'<button class="asi'+(x[0]===cur?' on':'')+'" data-k="'+x[0]+'">'+I(x[2])+'<span>'+x[1]+'</span></button>').join("")+'</div>'; }).join("");
+  $("aL").innerHTML=html||'<div class="asn">ما في قسم بهالاسم</div>';
+  $("aL").querySelectorAll(".asi").forEach(b=>b.onclick=()=>{ go(b.dataset.k); closeS(); });
+}
+function openS(){ $("aQ").value=""; draw(); sw.classList.add("show"); }
+function closeS(){ sw.classList.remove("show"); }
+$("aKb").onclick=openS; $("aX").onclick=closeS;
+sw.addEventListener("click",e=>{ if(e.target===sw) closeS(); });
+$("aQ").oninput=draw;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeS(); });
+
+function go(k){
+  const s=ALL.find(x=>x.k===k)||ALL[0]; cur=s.k;
+  $("aG").textContent=s.g; $("aT").textContent=s.n;
+  try{ sessionStorage.setItem("u0_adm_tab",s.k); }catch(e){}
+  scrollTo(0,0);
+  if(s.k==="stats"){ tabName="stats"; return render(); }
+  const btn=[...document.querySelectorAll(".tabs button")].find(b=>b.textContent.trim()===s.b);
+  if(btn){ btn.click(); } else { tabName=s.k; render(); }
+  if(s.k==="welcome"){ let n=0; const t=setInterval(()=>{ n++; const c=[...view.querySelectorAll(".card")].find(x=>x.textContent.includes("رسالة الترحيب"));
+    if(c){ clearInterval(t); c.scrollIntoView({behavior:"smooth",block:"start"}); } else if(n>30) clearInterval(t); },150); }
+}
+
+const cnt=async(t,f)=>{ let q=sb.from(t).select("id",{count:"exact",head:true}); if(f) q=f(q); const r=await q; return r.count||0; };
+async function statsView(){
+  const d0=new Date(); d0.setHours(0,0,0,0);
+  const C=[["إجمالي الطلبات","bag","كل الطلبات"],["الطلبات المكتملة","check","تم تنفيذها"],["قيد التنفيذ","clock","بانتظار التنفيذ"],["الطلبات المرفوضة","xc","مع استرجاع المبلغ"],["طلبات اليوم","cal","منذ منتصف الليل"],["إيداعات مفتوحة","wallet","بانتظار المراجعة"],["إجمالي المستخدمين","users","حسابات مسجّلة"],["المنتجات","box","في المتجر"]];
+  view.innerHTML='<div class="sgrid">'+C.map((c,i)=>'<div class="sc"><div class="t"><span>'+c[0]+'</span>'+I(c[1])+'</div><b id="sv'+i+'">…</b><small>'+c[2]+'</small></div>').join("")+
+   '<div class="sc w"><div class="t"><span>مجموع أرصدة الزبائن</span>'+I("coins")+'</div><b id="sv8">…</b><small>USD</small></div></div>';
+  const R=await Promise.allSettled([cnt("orders"),cnt("orders",q=>q.eq("status","done")),cnt("orders",q=>q.eq("status","pending")),cnt("orders",q=>q.eq("status","rejected")),cnt("orders",q=>q.gte("created_at",d0.toISOString())),cnt("deposits",q=>q.in("status",["pending","review"])),cnt("profiles"),cnt("products"),sb.from("profiles").select("balance").limit(5000)]);
+  if(tabName!=="stats") return;
+  R.forEach((r,i)=>{ const el=$("sv"+i); if(!el) return;
+    if(r.status!=="fulfilled"){ el.textContent="—"; return; }
+    el.textContent = i===8 ? ((r.value.data||[]).reduce((s,x)=>s+(+x.balance||0),0)).toFixed(2) : r.value; });
+}
+const _r=render; render=async function(){ if(tabName==="stats") return statsView(); return _r(); };
+
+let start="stats"; try{ start=sessionStorage.getItem("u0_adm_tab")||"stats"; }catch(e){}
+const s0=ALL.find(x=>x.k===start)||ALL[0];
+cur=s0.k; $("aG").textContent=s0.g; $("aT").textContent=s0.n;
+if(s0.k==="stats") tabName="stats"; else { tabName = s0.k==="welcome" ? "bc" : s0.k; }
 })();
 </script>
 </body>

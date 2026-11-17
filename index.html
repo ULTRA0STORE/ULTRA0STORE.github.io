@@ -339,7 +339,7 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
   <button class="mi" id="mLogin"></button>
   <button class="mi" id="mInstall"></button>
   <button class="mi" id="mAbout"></button>
-  <a class="mi" id="mAdmin" href="admin.html" style="display:none"></a>
+  <button class="mi" id="mAdmin" style="display:none"></button>
   <a class="mi" id="mWa" target="_blank" rel="noopener"></a>
   <a class="mi" id="mTg" target="_blank" rel="noopener"></a>
 </nav>
@@ -1494,6 +1494,46 @@ refreshUser = function(){ _rub();
   if(me && sb && chk!==me.id){ chk = me.id; sb.from("profiles").select("banned").eq("id",me.id).maybeSingle().then(r=>{ if(r.data && r.data.banned) openSheet("حسابك موقوف ⛔",'<div class="note">تم إيقاف حسابك. تواصل مع الدعم لمعرفة السبب.</div>'); }).catch(()=>{}); } };
 refreshUser();
 if(/[?&]complaints\b/.test(location.search)) setTimeout(()=>{ if(me) openComplaints(); },3000);
+})();
+</script>
+<script>
+/* ===== لوحة الإدارة مدموجة داخل الموقع (بدل ما تفتح صفحة لحالها) ===== */
+(function(){
+const st=document.createElement("style");
+st.textContent='#admPg.show{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}#admPg .pgbar{width:100%;flex:0 0 auto}#admFrame{flex:1 1 auto;width:100%;border:0;background:var(--bg);display:block}body.adm-open .bnav,body.adm-open .fab{display:none!important}';
+document.head.appendChild(st);
+const ap=document.createElement("div"); ap.className="page"; ap.id="admPg";
+ap.innerHTML='<div class="pgbar"><button class="back" id="aBack" aria-label="رجوع">›</button><h2>لوحة الإدارة</h2></div><iframe id="admFrame" title="لوحة الإدارة"></iframe>';
+document.body.appendChild(ap);
+const fr=document.getElementById("admFrame"), root=document.documentElement;
+const sync=()=>{ try{ const d=fr.contentDocument; if(!d||!d.documentElement) return;
+  d.documentElement.dataset.theme=root.dataset.theme||"";
+  const cs=getComputedStyle(root); ["--main","--main2"].forEach(k=>{ const v=cs.getPropertyValue(k).trim(); if(v) d.documentElement.style.setProperty(k,v); });
+}catch(e){} };
+fr.addEventListener("load",sync);
+new MutationObserver(sync).observe(root,{attributes:true,attributeFilter:["data-theme","style"]});
+function openAdmin(){
+  if(!fr.getAttribute("src")) fr.src="admin.html?embed=1";
+  ap.classList.add("show"); document.body.style.overflow="hidden"; document.body.classList.add("adm-open");
+  if(location.hash!=="#admin") history.pushState({adm:1},"","#admin");
+}
+function closeAdmin(){
+  if(!ap.classList.contains("show")) return;
+  ap.classList.remove("show"); document.body.style.overflow=""; document.body.classList.remove("adm-open");
+  if(location.hash==="#admin") history.replaceState(null,"",location.pathname+location.search);
+}
+window.openAdmin=openAdmin; window.closeAdmin=closeAdmin;
+const btn=document.getElementById("mAdmin");
+btn.onclick=e=>{ e.preventDefault(); toggleMenu(false); openAdmin(); };
+document.getElementById("aBack").onclick=closeAdmin;
+addEventListener("popstate",()=>{ if(location.hash!=="#admin") closeAdmin(); });
+document.getElementById("menu").addEventListener("click",e=>{ if(!e.target.closest("#mAdmin")) closeAdmin(); });
+document.querySelectorAll(".bnav button").forEach(b=>b.addEventListener("click",closeAdmin));
+/* فتح مباشر عبر الرابط #admin (أو لما حدا يفتح admin.html) — بيفتح بس للأدمن */
+if(location.hash==="#admin"){ let n=0; const t=setInterval(()=>{ n++;
+  if(btn.style.display!=="none"){ clearInterval(t); openAdmin(); }
+  else if(n>40){ clearInterval(t); history.replaceState(null,"",location.pathname+location.search); }
+},250); }
 })();
 </script>
 </body>
