@@ -316,6 +316,11 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
 .chipsid{margin-top:6px}.chipsid button{padding:5px 12px;margin:4px 0 0 6px;font-size:12px;border-radius:999px}
 .rcards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.rcards div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}.rcards b{display:block;font-size:18px}
 .menu{height:100%;height:100dvh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+.lp-or{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:rgba(255,255,255,.55);font-size:13px}
+.lp-or:before,.lp-or:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)}
+.lp-g{width:100%;height:54px;border-radius:16px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:800 16px 'Cairo',sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;backdrop-filter:blur(6px)}
+.lp-g:hover{background:rgba(255,255,255,.1)}.lp-g:active{transform:scale(.98)}.lp-g:disabled{opacity:.6}
+.lp-g svg{width:22px;height:22px;flex:none}
 </style>
 </head>
 <body>
@@ -840,6 +845,8 @@ function openLogin(){
           '<div class="lp-err" id="lpErr" role="alert"></div>'+
           '<button class="lp-btn" id="lpGo" type="submit"></button>'+
         '</form>'+
+        '<div class="lp-or"><span id="lpOrT"></span></div>'+
+        '<button type="button" class="lp-g" id="lpGoogle"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg><span id="lpGoogleT"></span></button>'+
         '<p class="lp-sw"><span id="lpSwT"></span> <button type="button" class="lp-link" id="lpSw"></button></p>'+
       '</div>';
     document.body.appendChild(el);
@@ -854,10 +861,16 @@ function openLogin(){
     $("lpEmail").placeholder = t.email; $("lpPass").placeholder = t.pass; $("lpConf").placeholder = t.conf;
     $("lpRemT").textContent = t.rem; $("lpForgot").textContent = t.forgot; $("lpForgot").style.visibility = reg ? "hidden" : "visible";
     $("lpGo").textContent = reg ? t.goReg : t.go; $("lpSwT").textContent = reg ? t.haveAcc : t.noAcc; $("lpSw").textContent = reg ? t.login : t.create;
+    $("lpOrT").textContent = lpLang==="ar" ? "أو" : "or"; $("lpGoogleT").textContent = lpLang==="ar" ? "المتابعة عبر Google" : "Continue with Google";
     $("lpConfW").style.display = reg ? "flex" : "none"; $("lpPass").autocomplete = reg ? "new-password" : "current-password";
   };
   const setErr = (m, ok) => { const e = $("lpErr"); e.className = "lp-err"+(ok?" ok":""); e.textContent = m || ""; };
   $("lpLang").onclick = ()=>{ lpLang = lpLang==="ar" ? "en" : "ar"; try{ localStorage.setItem("lp_lang", lpLang); }catch(e){} setErr(""); paint(); };
+  $("lpGoogle").onclick = async ()=>{
+    const b = $("lpGoogle"); b.disabled = true; setErr("");
+    const {error} = await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: location.origin+location.pathname}});
+    if(error){ b.disabled = false; setErr(lpLang==="ar" ? "تعذّر الدخول عبر Google، حاول مرة ثانية" : "Google sign-in failed, please try again"); }
+  };
   $("lpClose").onclick = closeLogin;
   el.onkeydown = e => { if(e.key==="Escape") closeLogin(); };
   $("lpEye").onclick = ()=>{ const i = $("lpPass"), c = $("lpConf"), show = i.type==="password"; i.type = c.type = show ? "text" : "password"; $("lpEye").classList.toggle("on", show); };
