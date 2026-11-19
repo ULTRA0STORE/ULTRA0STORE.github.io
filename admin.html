@@ -297,6 +297,52 @@ render=async function(){
 };
 })();
 
+
+/* تبويب الصفحة الرئيسية: النصوص + السلايدر */
+(function(){
+const bar=document.querySelector(".tabs"), nb=document.createElement("button"); nb.textContent="الرئيسية"; bar.appendChild(nb);
+nb.onclick=()=>{ tabName="home"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r=render;
+render=async function(){
+  if(tabName!=="home") return _r();
+  const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","home").maybeSingle();
+  let h={}; try{ h=JSON.parse(data&&data.value)||{}; }catch(e){}
+  const DEF=[{img:"banner-1.jpg",t:"صورة البانر",href:""},{t:"انضم لقناة تيليجرام",s:"عروض وأسعار يومية",href:"https://t.me/ULTRA0STORE"},{t:"انضم لقناة واتساب",s:"كل جديد أول بأول",href:"https://whatsapp.com/channel/0029VbDR6zHBFLgdAaMDpv0H"}];
+  let sl=Array.isArray(h.slides)&&h.slides.length?h.slides:DEF;
+  const row=(x,i)=>'<div class="card" data-i="'+i+'"><b>شريحة '+(i+1)+'</b><input class="st" placeholder="العنوان" value="'+esc(x.t||"")+'"><input class="ss" placeholder="النص الصغير" value="'+esc(x.s||"")+'"><input class="sh" dir="ltr" placeholder="الرابط عند الضغط (اختياري) https://..." value="'+esc(x.href||"")+'"><input class="si" dir="ltr" placeholder="رابط صورة (اختياري، إذا حطيته بتصير الشريحة صورة)" value="'+esc(x.img||"")+'"><button class="sd" style="width:100%">حذف الشريحة</button></div>';
+  v.innerHTML='<div class="card"><b>الترحيب بأعلى الصفحة</b><input id="ht" placeholder="العنوان الكبير" value="'+esc(h.title||"")+'"><input id="hs" placeholder="النص تحت العنوان" value="'+esc(h.sub||"")+'"><input id="hg" placeholder="سطر المزايا (فاضي = إخفاؤه)" value="'+esc(h.tag==null?"أفضل الأسعار • شحن فوري • دعم 24/7":h.tag)+'"><div class="muted">إذا تركت العنوان والنص فاضيين بيظهر النص الافتراضي.</div></div>'+
+   '<div id="sls">'+sl.map(row).join("")+'</div><button id="sadd" style="width:100%;margin:8px 0">+ إضافة شريحة</button><button id="hsave" style="width:100%">حفظ</button><button id="hreset" style="width:100%;margin-top:8px;background:#444">رجوع للافتراضي</button>';
+  const bind=()=>v.querySelectorAll(".sd").forEach(b=>b.onclick=()=>{ b.closest(".card").remove(); });
+  bind();
+  $("sadd").onclick=()=>{ const d=document.createElement("div"); d.innerHTML=row({},$("sls").children.length); $("sls").appendChild(d.firstChild); bind(); };
+  const save=async val=>{ const {error}=await sb.from("settings").upsert({key:"home",value:JSON.stringify(val)}); if(error) return fail(error); alert("تم الحفظ"); render(); };
+  $("hsave").onclick=()=>{
+    const slides=[...$("sls").children].map(c=>({t:c.querySelector(".st").value.trim(),s:c.querySelector(".ss").value.trim(),href:c.querySelector(".sh").value.trim(),img:c.querySelector(".si").value.trim()})).filter(x=>x.t||x.img);
+    save({title:$("ht").value.trim(),sub:$("hs").value.trim(),tag:$("hg").value.trim(),slides});
+  };
+  $("hreset").onclick=()=>{ if(confirm("رجوع كل النصوص والسلايدر للافتراضي؟")) save({}); };
+};
+})();
+
+
+/* تبويب العملات */
+(function(){
+const bar=document.querySelector(".tabs"), nb=document.createElement("button"); nb.textContent="العملات"; bar.appendChild(nb);
+nb.onclick=()=>{ tabName="rates"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r=render;
+render=async function(){
+  if(tabName!=="rates") return _r();
+  const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","rates").maybeSingle();
+  let o={}; try{ o=JSON.parse(data&&data.value)||{}; }catch(e){}
+  const F=[["SYP","ليرة سورية (كم ليرة بالدولار الواحد)"],["EGP","جنيه مصري (كم جنيه بالدولار)"],["JOD","دينار أردني (كم دينار بالدولار، مثلاً 0.71)"]];
+  v.innerHTML='<div class="card"><b>أسعار الصرف لعرض الأسعار</b><div class="muted">اكتب كم تساوي 1 دولار. اترك الخانة فاضية لإخفاء العملة من الموقع. الدولار دايماً موجود، والعمليات الفعلية بالدولار.</div>'+
+    F.map(f=>'<label class="muted">'+f[1]+'</label><input class="rt" data-k="'+f[0]+'" type="number" step="any" min="0" dir="ltr" value="'+esc(o[f[0]]||"")+'">').join("")+
+    '<button id="rsave" style="width:100%;margin-top:8px">حفظ</button></div>';
+  $("rsave").onclick=async()=>{ const val={}; v.querySelectorAll(".rt").forEach(i=>{ const n=parseFloat(i.value); if(n>0) val[i.dataset.k]=n; });
+    const {error}=await sb.from("settings").upsert({key:"rates",value:JSON.stringify(val)}); if(error) return fail(error); alert("تم الحفظ"); };
+};
+})();
+
 /* تبويب نوع الإدخال */
 (function(){
 const nb = document.createElement("button"); nb.textContent = "نوع الإدخال"; document.querySelector(".tabs").appendChild(nb);

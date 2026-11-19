@@ -321,6 +321,97 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
 .lp-g{width:100%;height:54px;border-radius:16px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:800 16px 'Cairo',sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;backdrop-filter:blur(6px)}
 .lp-g:hover{background:rgba(255,255,255,.1)}.lp-g:active{transform:scale(.98)}.lp-g:disabled{opacity:.6}
 .lp-g svg{width:22px;height:22px;flex:none}
+
+/* ===== تصميم داكن مطوّر (بطاقات + رصيد + ترحيب) ===== */
+.wcard{display:flex;align-items:center;gap:14px;margin:14px 12px 4px;padding:16px;border-radius:22px;border:1px solid rgba(255,90,110,.28);
+background:radial-gradient(120% 140% at 100% 0%,rgba(224,30,55,.28),transparent 60%),linear-gradient(160deg,#1a0a0d,#0c0507);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+:root[data-theme=light] .wcard{background:linear-gradient(160deg,#fff,#fdecee);box-shadow:0 8px 20px rgba(179,0,27,.1)}
+.wcard .wic{flex:none;width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(160deg,#e01e37,#8a0016);box-shadow:0 6px 16px rgba(224,30,55,.4)}
+.wcard .wic svg{width:28px;height:28px}
+.wcard h2{font-size:18px;font-weight:800;margin:0 0 4px;color:var(--text)}
+.wcard .wtag{margin-top:8px;font-size:12px;font-weight:800;color:var(--main2);letter-spacing:.2px}
+.wcard p{margin:0;font-size:13px;line-height:1.8;color:var(--muted)}
+.sec{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800;margin:18px 2px 12px;color:var(--text)}
+.sec:before{content:"";width:4px;height:22px;border-radius:3px;background:var(--main2);box-shadow:0 0 12px rgba(224,30,55,.7)}
+.bal{flex:none;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 12px;border-radius:14px;border:1px solid rgba(255,90,110,.35);color:#ff8d9b;font:800 14px/1 Cairo,system-ui,sans-serif;
+background:linear-gradient(160deg,rgba(224,30,55,.22),rgba(60,0,10,.5));direction:ltr;white-space:nowrap}
+.bal i{display:flex}.bal svg{width:18px;height:18px}
+.bal:active{transform:scale(.96)}
+/* بطاقات الأقسام */
+.grid{gap:var(--cat-gap)}
+.grid .cat{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;gap:0;padding:0;box-shadow:0 6px 16px rgba(0,0,0,.3);transition:.22s}
+.grid .cat:hover,.grid .cat:focus-visible{transform:translateY(-3px);border-color:rgba(255,90,110,.55);box-shadow:0 12px 26px rgba(224,30,55,.25);outline:0}
+.grid .cat .ico{aspect-ratio:1/.78;border:0;border-radius:0;box-shadow:none;
+background:radial-gradient(90% 80% at 50% 0%,rgba(224,30,55,.35),transparent 70%),linear-gradient(180deg,#2a0c12,#12060a)}
+:root[data-theme=light] .grid .cat .ico{background:radial-gradient(90% 80% at 50% 0%,rgba(224,30,55,.18),transparent 70%),linear-gradient(180deg,#fdecee,#fff)}
+.grid .cat:hover .ico,.grid .cat:focus-visible .ico{box-shadow:none;border:0}
+.grid .cat .ico::before{opacity:.5}
+.grid .cat .ico svg{width:46%;height:46%;margin-bottom:6px;color:#f3d9dc;filter:none;transition:.22s}
+:root[data-theme=light] .grid .cat .ico svg{color:var(--main2)}
+.grid .cat:hover .ico svg{color:#fff;transform:scale(1.08)}
+.grid .cat .rb{bottom:7px;padding:1px 7px;background:rgba(224,30,55,.16);border:1px solid rgba(255,90,110,.4);color:#ff8d9b;border-radius:6px;font-size:8.5px;box-shadow:none}
+.grid .cat h3{width:100%;box-sizing:border-box;padding:10px 6px;background:rgba(0,0,0,.28);border-top:1px solid var(--line);text-align:center;font-size:13px}
+:root[data-theme=light] .grid .cat h3{background:rgba(224,30,55,.05)}
+:root[data-theme=light] .bal{color:var(--main);background:#fff;border-color:rgba(179,0,27,.35)}
+:root[data-theme=light] .grid .cat .rb{color:var(--main);background:rgba(224,30,55,.08);border-color:rgba(179,0,27,.35)}
+/* شريط التنقل السفلي */
+.bnav{background:rgba(14,6,8,.92);backdrop-filter:blur(14px);border-color:rgba(255,90,110,.25)}
+:root[data-theme=light] .bnav{background:rgba(255,255,255,.95)}
+.bnav button{transition:.18s}
+.bnav button:active{transform:scale(.93)}
+.bnav .home i{border:3px solid var(--bg)}
+
+/* ===== حجم مضغوط واحترافي ===== */
+:root{--slider-ratio:3.1/1;--slider-max:150px;--cat-gap:10px 8px}
+@media(min-width:640px){:root{--slider-ratio:3.8/1;--slider-max:210px;--cat-gap:14px 12px}}
+header{padding:7px 10px;gap:6px}
+header .logo{font-size:15px;font-weight:800;letter-spacing:.6px}
+.hbtns{gap:5px}
+.hbtns .icon-btn{width:32px;height:32px;border-radius:10px}
+.hbtns .icon-btn svg{width:16px;height:16px}
+header .login{padding:6px 11px;font-size:12px;border-radius:10px}
+.bal{height:32px;padding:0 10px;border-radius:10px;font-size:12.5px;gap:5px}
+.bal svg{width:15px;height:15px}
+.slider{margin-top:8px}
+.slide b{font-size:15px}.slide b small{font-size:11.5px}
+.dots{margin-top:6px}
+.ticker{margin-top:8px;padding:4px 0}
+.ticker span{font-size:12px}
+.wcard{margin:8px 12px 0;padding:10px 12px;gap:10px;border-radius:16px}
+.wcard .wic{width:38px;height:38px;border-radius:11px}
+.wcard .wic svg{width:20px;height:20px}
+.wcard h2{font-size:14.5px;margin:0 0 2px}
+.wcard p{font-size:11.5px;line-height:1.6}
+.wcard .wtag{margin-top:4px;font-size:10.5px}
+.search{height:38px;font-size:13px;border-radius:12px;margin-top:10px}
+.grid .cat{border-radius:18px}
+.grid .cat .ico{aspect-ratio:1/.95}
+.grid .cat .ico svg{width:46%;height:46%;margin-bottom:12px}
+.grid .cat .rb{bottom:8px;font-size:8.5px;padding:1px 7px}
+.grid .cat h3{padding:10px 6px;font-size:13px}
+.bnav{padding:5px 4px;border-radius:24px}
+.bnav button{font-size:9.5px}
+.bnav button i{font-size:19px}
+.bnav .home i{width:42px;height:42px;margin-top:-18px}
+
+.curbox{margin:6px 0 10px}
+.curx{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:8px;border-radius:14px;border:1px solid rgba(255,90,110,.3);background:rgba(224,30,55,.08);font-size:13px;color:var(--muted)}
+.curx b{color:var(--main2);font-size:13px}
+.curh{display:flex;justify-content:space-between;align-items:center;width:100%;padding:11px 14px;border-radius:14px;border:1px solid rgba(255,90,110,.3);background:var(--card);color:var(--text);font-family:inherit}
+.curh .cht{display:flex;flex-direction:column;align-items:flex-start;text-align:right}
+.curh .cht b{font-size:14px;font-weight:800}.curh .cht small{font-size:11px;color:var(--muted);margin-top:1px}
+.curh .chc{padding:6px 12px;border-radius:10px;background:rgba(224,30,55,.14);color:var(--main2);font-weight:800;font-size:13px}
+.curh .chc i{font-style:normal;display:inline-block;transition:.2s}
+.curbox.open .chc i{transform:rotate(180deg)}
+.curg{display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.curbox.open .curg{display:grid}
+.curc{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 10px 8px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;text-align:right;min-width:0}
+.curc.on{border-color:var(--main2);background:rgba(224,30,55,.1)}
+.curc em{position:absolute;top:-7px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--main2);color:#fff;font:700 11px/20px system-ui;text-align:center;font-style:normal}
+.curc .cs{align-self:flex-start;min-width:34px;padding:5px 8px;border-radius:10px;font:800 14px/1.2 Cairo,system-ui,sans-serif;text-align:center;margin-bottom:6px}
+.curc .cn{font-size:13px;font-weight:800}
+.curc .cc{font-size:11px;font-weight:800;color:var(--main2);letter-spacing:.5px}
+.curc small{font-size:10px;color:var(--muted);margin-top:2px}
 </style>
 </head>
 <body>
@@ -333,6 +424,7 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
   </div>
   <div class="logo">ULTRA0 STORE</div>
   <button class="login" id="loginBtn">تسجيل الدخول</button>
+  <button class="bal" id="balChip" aria-label="رصيدي" style="display:none"><i id="balIco"></i><b id="balTx">0.00</b></button>
 </header>
 
 <nav class="menu" id="menu">
@@ -349,6 +441,11 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
   <a class="mi" id="mTg" target="_blank" rel="noopener"></a>
 </nav>
 
+<section class="wcard" id="wcard">
+  <div class="wic" id="wcIco"></div>
+  <div class="wtx"><h2 id="hTitle">كل خدماتك بمكان واحد</h2><p id="hSub">اشحن جميع ألعابك وتطبيقاتك وخدماتك الرقمية بكل سهولة وأمان.</p><div class="wtag" id="hTag">أفضل الأسعار • شحن فوري • دعم 24/7</div></div>
+</section>
+
 <section class="slider">
   <div class="track" id="track" role="region" aria-roledescription="carousel" aria-label="العروض" tabindex="0"></div>
   <div class="dots" id="dots"></div>
@@ -358,10 +455,7 @@ box-shadow:0 10px 22px rgba(179,0,27,.28),inset 0 1px 0 rgba(255,255,255,.18);tr
 
 <div class="social" id="social" style="display:none"></div>
 
-<div style="text-align: center; margin-top: 20px; padding: 0 15px;">
-  <h2 style="color: var(--main2); font-size: 20px;">ULTRA0 STORE</h2>
-  <p style="color: var(--muted); font-size: 14px; line-height: 1.8;">متجر رقمي متخصص في شحن الألعاب (مثل ببجي، فري فاير)، بيع البطاقات الرقمية، والاشتراكات بأسعار منافسة وسرعة في التنفيذ.</p>
-</div>
+
 
 <main class="wrap" id="grid-top">
   <input class="search" id="search" type="search" placeholder="ابحث عن قسم أو خدمة...">
@@ -413,10 +507,8 @@ const WA_CHANNEL = "https://whatsapp.com/channel/0029VbDR6zHBFLgdAaMDpv0H";
 const TG_CHANNEL = "https://t.me/ULTRA0STORE";
 const IG = "https://www.instagram.com/ultr3_st0re_0";
 
-const slides = [
+let slides = [
   {img:"banner-1.jpg", alt:"ULTRA0 STORE - Digital Game Top-Ups & Gift Cards. Fast. Secure. Instant Delivery", go:"grid-top"},
-  {t:"شحن فوري وآمن", s:"ببجي • فري فاير • بطاقات • اشتراكات — بأسعار منافسة"},
-  {t:"الـتـرا قـريـبـاً لـلـعـالـمـيـه", s:"ULTRA0 STORE", href:"https://wa.me/"+WA_MAIN},
   {t:"انضم لقناة تيليجرام", s:"عروض وأسعار يومية", href:TG_CHANNEL},
   {t:"انضم لقناة واتساب", s:"كل جديد أول بأول", href:WA_CHANNEL}
 ];
@@ -520,6 +612,8 @@ $("popTg").href = WA_CHANNEL;
 /* ===== السلايدر ===== */
 const track = $("track"), dots = $("dots");
 let cur = 0, timer = null, moved = false;
+function buildSlides(){
+track.innerHTML = ""; dots.innerHTML = ""; cur = 0;
 slides.forEach((s,i)=>{
   const d = document.createElement(s.href?"a":"div");
   d.className = "slide"+(i?"":" on")+(s.img?" img":"");
@@ -533,6 +627,8 @@ slides.forEach((s,i)=>{
   const dot = document.createElement("button"); dot.type = "button"; dot.setAttribute("aria-label","شريحة "+(i+1));
   dot.className = i?"":"on"; dot.onclick = ()=>{ go(i); play(); }; dots.appendChild(dot);
 });
+}
+buildSlides();
 function go(n){
   const N = slides.length; n = (n+N)%N;
   track.children[cur].classList.remove("on"); track.children[cur].setAttribute("aria-hidden","true"); dots.children[cur].classList.remove("on");
@@ -701,7 +797,14 @@ function openAbout(){
 const SB_URL = "https://sbzdkuyxccfyvktjhdas.supabase.co", SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiemRrdXl4Y2NmeXZrdGpoZGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NTEzOTksImV4cCI6MjEwNzEyNzM5OX0.fuUbL4xWUndqylQXTJzCTXIY8Qd6V85pXvF40eJ5jYs";
 let sb = null, me = null;
 try{ if(!SB_URL.startsWith("PASTE") && !SB_KEY.startsWith("PASTE")) sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
-const money = n => { const v = Number(n||0); return (Math.abs(Math.round(v*100)-v*100) > 0.0001 ? v.toFixed(3) : v.toFixed(2))+" $"; };
+const CURS = {USD:{s:"$",r:1,d:2,l:"دولار أمريكي"}};
+const CUR_META = {SYP:{s:"ل.س",d:0,l:"ليرة سورية"},EGP:{s:"ج.م",d:2,l:"جنيه مصري"},JOD:{s:"د.أ",d:2,l:"دينار أردني"}};
+function setRates(o){ Object.keys(CUR_META).forEach(k=>{ const r = Number(o&&o[k]); if(r>0) CURS[k] = {s:CUR_META[k].s,d:CUR_META[k].d,l:CUR_META[k].l,r:r}; else delete CURS[k]; }); }
+try{ setRates(JSON.parse(localStorage.getItem("u0_rates")||"{}")); }catch(e){}
+let CUR = "USD"; try{ CUR = localStorage.getItem("u0_cur")||"USD"; }catch(e){} if(!CURS[CUR]) CUR = "USD";
+const money = n => { const v = Number(n||0);
+  if(CUR==="USD") return (Math.abs(Math.round(v*100)-v*100) > 0.0001 ? v.toFixed(3) : v.toFixed(2))+" $";
+  const c = CURS[CUR], x = v*c.r; return (c.d ? x.toFixed(c.d) : Math.round(x).toLocaleString("en-US"))+" "+c.s; };
 const vpct = () => (me && me.vip) ? me.vip.pct : 0;
 const vprice = n => { const p = Number(n||0); return vpct() ? p*(1-vpct()/100) : p; };
 const pshow = n => vpct() ? '<span class="pold">'+money(n)+'</span>'+money(vprice(n)) : money(n);
@@ -1558,6 +1661,67 @@ if(location.hash==="#admin"){ let n=0; const t=setInterval(()=>{ n++;
   if(btn.style.display!=="none"){ clearInterval(t); openAdmin(); }
   else if(n>40){ clearInterval(t); history.replaceState(null,"",location.pathname+location.search); }
 },250); }
+})();
+</script>
+<script>
+/* ===== رصيد بالهيدر + أيقونة الترحيب ===== */
+(function(){
+  try{ $("wcIco").innerHTML = ico("home",28); $("balIco").innerHTML = ico("wallet",18); }catch(e){}
+  const chip = document.getElementById("balChip"), tx = document.getElementById("balTx"), lg = document.getElementById("loginBtn");
+  chip.onclick = ()=>{ const b = document.querySelectorAll(".bnav button")[3]; if(b) b.click(); };
+  let last = null;
+  function sync(){
+    let m = null; try{ m = me; }catch(e){}
+    const on = !!m;
+    const v = on ? money(m.balance) : "";
+    if(last !== (on?v:"#") ){ last = on?v:"#"; chip.style.display = on ? "inline-flex" : "none"; lg.style.display = on ? "none" : ""; tx.textContent = v; }
+  }
+  setInterval(sync, 800); sync();
+})();
+</script>
+<script>
+/* ===== نصوص الصفحة الرئيسية والسلايدر من لوحة الأدمن ===== */
+(function(){
+  if(!sb) return;
+  sb.from("settings").select("value").eq("key","home").maybeSingle().then(r=>{
+    let h = null; try{ h = JSON.parse(r.data && r.data.value); }catch(e){}
+    if(!h || typeof h!=="object") return;
+    const T = (id,v)=>{ if(typeof v==="string" && v.trim()){ $(id).textContent = v.trim(); } };
+    T("hTitle",h.title); T("hSub",h.sub);
+    if(typeof h.tag==="string"){ if(h.tag.trim()) $("hTag").textContent = h.tag.trim(); else $("hTag").style.display = "none"; }
+    if(Array.isArray(h.slides) && h.slides.length){
+      const ok = u => /^https?:\/\//i.test(u||"") || /^[\w./-]+\.(jpg|jpeg|png|webp|gif)$/i.test(u||"");
+      const ns = h.slides.map(x=>{
+        const o = {}; if(x.href && /^https?:\/\//i.test(x.href)) o.href = x.href;
+        if(x.img && ok(x.img)){ o.img = x.img; o.alt = x.t||"ULTRA0 STORE"; if(!o.href) o.go = "grid-top"; }
+        else { o.t = x.t||""; o.s = x.s||""; }
+        return o;
+      }).filter(x=>x.img||x.t);
+      if(ns.length){ slides = ns; buildSlides(); play(); }
+    }
+  }).catch(()=>{});
+})();
+</script>
+<script>
+/* ===== عملة العرض ===== */
+(function(){
+  if(sb) sb.from("settings").select("value").eq("key","rates").maybeSingle().then(r=>{
+    try{ const o = JSON.parse(r.data && r.data.value) || {}; localStorage.setItem("u0_rates", JSON.stringify(o)); }catch(e){}
+  }).catch(()=>{});
+  const COL = {USD:"#22c55e",SYP:"#e01e37",JOD:"#3b82f6",EGP:"#eab308"};
+  const fmtR = k=> k==="USD" ? "" : "1 USD = "+(CURS[k].d ? CURS[k].r : Math.round(CURS[k].r).toLocaleString("en-US"))+" "+k;
+  const ks = Object.keys(CURS);
+  if(ks.length>1){
+    const w = document.createElement("div"); w.className = "curbox";
+    w.innerHTML =
+      (CUR!=="USD" ? '<div class="curx"><span>سعر الصرف</span><b dir="ltr">'+esc(fmtR(CUR))+'</b></div>' : '')+
+      '<button class="curh" id="curH" type="button"><span class="cht"><b>عملة العرض</b><small>اضغط لتغيير العملة</small></span><span class="chc" dir="ltr">'+esc(CUR)+' <i>▾</i></span></button>'+
+      '<div class="curg" id="curG">'+ks.map(k=>'<button type="button" class="curc'+(k===CUR?" on":"")+'" data-c="'+k+'">'+(k===CUR?'<em>✓</em>':'')+
+        '<span class="cs" style="color:'+COL[k]+';background:'+COL[k]+'22">'+esc(CURS[k].s)+'</span><span class="cn">'+esc(CURS[k].l)+'</span><span class="cc">'+k+'</span><small dir="ltr">'+(k==="USD"?"العملة الأساسية":esc(fmtR(k)))+'</small></button>').join("")+'</div>';
+    w.querySelector("#curH").onclick = ()=>w.classList.toggle("open");
+    w.querySelectorAll(".curc").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("u0_cur", b.dataset.c); }catch(e){} location.reload(); });
+    $("mOrders").before(w);
+  }
 })();
 </script>
 </body>
