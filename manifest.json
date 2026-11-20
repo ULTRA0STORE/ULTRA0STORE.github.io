@@ -1,6 +1,6 @@
 {
   "name": "ULTRA0 STORE",
-  "short_name": "ULTRA0",
+  "short_name": "ULTRA0 STORE",
   "description": "شحن ألعاب وبطاقات رقمية وخدمات بأسعار منافسة",
   "lang": "ar",
   "dir": "rtl",
@@ -11,8 +11,23 @@
   "background_color": "#260202",
   "theme_color": "#0a0003",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
