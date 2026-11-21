@@ -36,7 +36,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
 .embed .box{max-width:900px}
 .embed h1,.embed #out{display:none}
 .embed{padding:0}
-</style>
+*{-webkit-tap-highlight-color:transparent}button:focus:not(:focus-visible){outline:none}</style>
 </head>
 <body><div class="box">
 <h1>لوحة إدارة ULTRA0</h1>
@@ -343,6 +343,56 @@ render=async function(){
 };
 })();
 
+/* ===== الدعم المباشر (محادثات الزبائن) ===== */
+(function(){
+const bar=document.querySelector(".tabs"), nb=document.createElement("button"); nb.textContent="الدعم المباشر"; bar.appendChild(nb);
+let tm=null, openU=null;
+nb.onclick=()=>{ tabName="support"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===nb)); render(); };
+const _r=render;
+render=async function(){ clearInterval(tm); if(tabName!=="support") return _r(); return list(); };
+const tt=d=>{ try{ return new Date(d).toLocaleString("ar",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}); }catch(e){ return ""; } };
+const urls={}; async function url(p){ if(urls[p]) return urls[p]; const r=await sb.storage.from("support").createSignedUrl(p,3600); return urls[p]=(r.data&&r.data.signedUrl)||""; }
+async function list(){
+  openU=null; const v=$("view");
+  if(!v.querySelector("#spL")) v.innerHTML='<div class="card"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="spOn" style="width:auto"> <b>إظهار نقطة «متصل الآن» خضراء للزبائن</b></label><div class="muted">فعّلها لما تكون موجود وبتجاوب بسرعة.</div></div><div id="spL"><div class="muted">جاري التحميل...</div></div>';
+  const on=await sb.from("settings").select("value").eq("key","support_online").maybeSingle();
+  const cb=$("spOn"); cb.checked=!!(on.data&&String(on.data.value)==="1");
+  cb.onchange=async()=>{ const r=await sb.from("settings").upsert({key:"support_online",value:cb.checked?"1":"0"}); if(r.error){ cb.checked=!cb.checked; fail(r.error); } };
+  const r=await sb.rpc("admin_support_threads"); if(tabName!=="support"||openU) return;
+  if(r.error) return $("spL").innerHTML='<div class="card">'+esc(r.error.message)+'<div class="muted">تأكد أنك شغّلت ملف support.sql</div></div>';
+  const L=r.data||[];
+  $("spL").innerHTML=L.length?L.map(x=>'<div class="card" data-u="'+x.user_id+'" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><b dir="ltr">'+esc(x.email||x.user_id)+'</b>'+(+x.unread>0?'<span style="background:#e01e37;color:#fff;border-radius:10px;padding:0 8px;font-weight:800">'+x.unread+'</span>':'')+'</div><div class="muted">'+(x.last_sender==="admin"?"أنت: ":"")+esc(x.last_has_image&&!x.last_body?"📷 صورة":(x.last_body||""))+' • '+tt(x.last_at)+'</div></div>').join(""):'<div class="card muted">ما في محادثات بعد.</div>';
+  $("spL").querySelectorAll("[data-u]").forEach(c=>c.onclick=()=>thread(c.dataset.u,(L.find(x=>x.user_id===c.dataset.u)||{}).email));
+  tm=setInterval(()=>{ if(tabName==="support"&&!openU&&!document.hidden) list(); },10000);
+}
+async function thread(uid,email){
+  openU=uid; clearInterval(tm); const v=$("view");
+  v.innerHTML='<div class="card"><button id="spBk" class="gray">‹ رجوع للمحادثات</button> <b dir="ltr">'+esc(email||uid)+'</b></div><div id="spM" style="display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><div class="card"><textarea id="spT" rows="2" maxlength="2000" placeholder="اكتب الرد..."></textarea><div style="display:flex;gap:8px"><button id="spA" class="gray" style="flex:1">📎 صورة</button><button id="spS" style="flex:3">إرسال</button></div><input type="file" id="spF" accept="image/*" hidden></div>';
+  $("spBk").onclick=()=>{ clearInterval(tm); list(); };
+  let n=-1;
+  async function load(){
+    const r=await sb.from("support_messages").select("id,sender,body,image_path,created_at").eq("user_id",uid).order("created_at",{ascending:true}).limit(300);
+    if(openU!==uid||!r.data) return; if(r.data.length===n) return; n=r.data.length;
+    const m=$("spM"); if(!m) return; const st=m.getBoundingClientRect().bottom<innerHeight+160;
+    m.innerHTML=r.data.map(x=>'<div style="align-self:'+(x.sender==="admin"?"flex-start":"flex-end")+';max-width:85%;background:'+(x.sender==="admin"?"var(--main)":"var(--card)")+';color:'+(x.sender==="admin"?"#fff":"var(--text)")+';border:1px solid var(--line);border-radius:14px;padding:8px 12px;white-space:pre-wrap;word-break:break-word">'+(x.image_path?'<img data-p="'+esc(x.image_path)+'" style="max-width:100%;max-height:240px;border-radius:10px;display:block;margin-bottom:4px">':'')+esc(x.body||"")+'<div class="muted" style="font-size:11px;color:inherit;opacity:.7">'+tt(x.created_at)+'</div></div>').join("");
+    m.querySelectorAll("img[data-p]").forEach(im=>url(im.dataset.p).then(u=>{ im.src=u; im.style.cursor="zoom-in"; im.onclick=()=>window.open(u,"_blank"); }));
+    sb.rpc("support_mark_read",{p_user:uid});
+    if(st||n<=1) scrollTo(0,document.body.scrollHeight);
+  }
+  await load(); tm=setInterval(()=>{ if(tabName==="support"&&openU===uid&&!document.hidden) load(); },4000);
+  async function send(img){ const t=$("spT").value.trim(); if(!t&&!img) return; $("spS").disabled=true;
+    const r=await sb.rpc("admin_support_reply",{p_user:uid,p_body:t||null,p_image:img||null}); $("spS").disabled=false;
+    if(r.error) return fail(r.error); $("spT").value=""; n=-1; load(); }
+  $("spS").onclick=()=>send();
+  $("spA").onclick=()=>$("spF").click();
+  $("spF").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+    const b=await new Promise(res=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); c.toBlob(res,"image/jpeg",.75); }; im.onerror=()=>res(null); im.src=URL.createObjectURL(f); });
+    if(!b) return alert("الصورة غير صالحة");
+    const path=uid+"/a-"+Date.now()+".jpg"; const up=await sb.storage.from("support").upload(path,b,{contentType:"image/jpeg"});
+    if(up.error) return fail(up.error); send(path); };
+}
+})();
+
 /* تبويب نوع الإدخال */
 (function(){
 const nb = document.createElement("button"); nb.textContent = "نوع الإدخال"; document.querySelector(".tabs").appendChild(nb);
@@ -546,7 +596,17 @@ addTab("إشعار جماعي","bc",async function bc(){
   const [c,h,w] = await Promise.all([sb.from("push_subscriptions").select("id",{count:"exact",head:true}), sb.from("push_broadcasts").select("title,sent,target,created_at").order("id",{ascending:false}).limit(10), sb.from("settings").select("value").eq("key","welcome").maybeSingle()]);
   let wl = {}; try{ wl = JSON.parse(w.data.value)||{}; }catch(e){}
   v.innerHTML = '<div class="card"><b>📣 إشعار جماعي</b><div class="muted">الأجهزة المشتركة: <b>'+(c.count||0)+'</b></div><input id="bt" maxlength="80" placeholder="العنوان (مثال: عرض اليوم 🔥)"><textarea id="bb" rows="3" maxlength="300" placeholder="نص الإشعار"></textarea><input id="be" dir="ltr" placeholder="إيميل زبون معيّن (فاضي = للجميع)"><button id="bs" style="width:100%">إرسال</button></div>'+
-   '<div class="card"><b>👋 رسالة الترحيب</b><div class="muted">نافذة بتظهر مرة وحدة لكل زبون. كل ما تحفظ نص جديد بتظهر من جديد.</div><input id="wt" placeholder="العنوان" value="'+esc(wl.t||"")+'"><textarea id="wb" rows="3" placeholder="النص (فاضي = إيقاف)">'+esc(wl.b||"")+'</textarea><button id="ws" style="width:100%">حفظ ونشر</button></div>'+
+   '<div class="card"><b>👋 نافذة الترحيب</b><div class="muted">النافذة يلي بتطلع للزبون أول ما يفوت عالموقع. عدّل كل كلمة فيها متل ما بدك.</div>'+
+   '<label class="muted">اسم المتجر (فوق)</label><input id="wbr" maxlength="40" placeholder="ULTRA0 STORE" value="'+esc(wl.brand||"")+'">'+
+   '<label class="muted">العنوان (أبيض)</label><input id="wt" maxlength="120" placeholder="أهلاً وسهلاً بكم ." value="'+esc(wl.t||"")+'">'+
+   '<label class="muted">النص (أحمر)</label><textarea id="wb" rows="4" maxlength="600" placeholder="اكتب رسالتك هون">'+esc(wl.b||"")+'</textarea>'+
+   '<label class="muted">كلمة الزر</label><input id="wok" maxlength="30" placeholder="حسناً" value="'+esc(wl.ok||"")+'">'+
+   '<label class="muted">زر إضافي (اختياري) – الاسم والرابط</label><input id="wlt" maxlength="40" placeholder="مثال: تابعنا على واتساب" value="'+esc(wl.linkT||"")+'"><input id="wl" dir="ltr" placeholder="https://..." value="'+esc(wl.link||"")+'">'+
+   '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="wk" style="width:auto"'+(wl.kash===false?"":" checked")+'> مدّ الحروف (يـرجـى مـن الـجـمـيـع)</label>'+
+   '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="we" style="width:auto"'+(wl.every?" checked":"")+'> تطلع بكل زيارة (بدل مرة وحدة لكل زبون)</label>'+
+   '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="woff" style="width:auto"'+(wl.off?" checked":"")+'> إيقاف النافذة نهائياً</label>'+
+   '<div class="muted">إذا تركت النص فاضي بتطلع الرسالة الافتراضية (متابعة قناة الواتساب).</div>'+
+   '<div style="display:flex;gap:8px"><button id="wpv" class="gray" style="flex:1">معاينة</button><button id="ws" style="flex:2">حفظ ونشر</button></div></div>'+
    '<div class="card"><b>آخر الإرسالات</b>'+((h.data||[]).map(x=>'<div style="padding:4px 0">'+esc(x.title)+' <span class="muted">• '+x.sent+' جهاز • '+esc(x.target)+' • '+dt(x.created_at)+'</span></div>').join("")||'<div class="muted">لا شيء بعد</div>')+'</div>';
   $("bs").onclick = async ()=>{
     const t = $("bt").value.trim(), b = $("bb").value.trim(), e = $("be").value.trim(); if(!t||!b) return alert("اكتب العنوان والنص");
@@ -554,8 +614,16 @@ addTab("إشعار جماعي","bc",async function bc(){
     const {data,error} = await sb.functions.invoke("send-push",{body:{broadcast:{title:t,body:b,email:e||undefined}}}); $("bs").disabled = false;
     if(error || (data && data.error)){ const fe = error && /Failed to send|fetch/i.test(error.message||""); return alert("فشل الإرسال: "+(fe ? "الدالة send-push غير منشورة أو اسمها غلط أو الأسرار ناقصة بـ Supabase (راجع الخطوة 2 و3 من SETUP)" : ((data && data.error) || error.message))); } alert("تم الإرسال إلى "+data.sent+" جهاز"); bc();
   };
-  $("ws").onclick = async ()=>{ const t = $("wt").value.trim(), b = $("wb").value.trim();
-    const {error} = await sb.from("settings").upsert({key:"welcome",value:JSON.stringify(b?{t,b,v:Date.now()}:{})}); if(error) return fail(error); alert(b?"تم النشر":"تم الإيقاف"); };
+  const wForm = ()=>{ const g = id=>$(id).value.trim(), o = {brand:g("wbr"), t:g("wt"), b:g("wb"), ok:g("wok"), linkT:g("wlt"), link:g("wl"), kash:$("wk").checked, every:$("we").checked, off:$("woff").checked};
+    Object.keys(o).forEach(k=>{ if(o[k]==="") delete o[k]; }); return o; };
+  $("wpv").onclick = ()=>{ const o = wForm(); if(o.link && !/^https?:\/\//i.test(o.link)) return alert("الرابط لازم يبلش بـ https://");
+    const p = {t:o.t||"أهلاً وسهلاً بكم .", b:o.b||"تابعوا قناتنا على واتساب ليصلكم كل جديد من العروض والأسعار أولاً بأول", brand:o.brand, ok:o.ok, kash:o.kash};
+    if(o.link){ p.link = o.link; p.linkT = o.linkT||"فتح الرابط"; }
+    let f = null; try{ f = window.parent!==window && window.parent.showWelcome; }catch(e){}
+    if(f) f(p); else alert("المعاينة بتشتغل من داخل الموقع (لوحة الإدارة المدموجة)"); };
+  $("ws").onclick = async ()=>{ const o = wForm(); if(o.link && !/^https?:\/\//i.test(o.link)) return alert("الرابط لازم يبلش بـ https://");
+    o.v = Date.now(); const {error} = await sb.from("settings").upsert({key:"welcome",value:JSON.stringify(o)}); if(error) return fail(error);
+    alert(o.off ? "تم إيقاف النافذة" : o.b ? "تم النشر، بتطلع للزباين من جديد" : "تم الحفظ، رح تطلع الرسالة الافتراضية"); };
 });
 
 addTab("أكواد الهدايا","gift",async function gift(){
@@ -606,6 +674,7 @@ const P={
  mega:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
  trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 11 5 12 8c1-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+ chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
@@ -628,7 +697,7 @@ const G=[
  ["المستخدمون",[["users","المستخدمون","users","المستخدمون"],["ban","الحظر","ban","الحظر"]]],
  ["الكتالوج",[["cats","الأقسام","grid","الأقسام"],["products","المنتجات","box","المنتجات"],["ann","الشريط والإعلان","mega","الإعلان"],["inp","نوع الإدخال","input","نوع الإدخال"]]],
  ["التسعير",[["vip","مستويات الخصم","trend","VIP"],["gift","أكواد الهدايا","gift","أكواد الهدايا"],["rates","العملات","coins","العملات"]]],
- ["الدعم",[["bc","الإشعارات","bell","إشعار جماعي"]]],
+ ["الدعم",[["support","الدعم المباشر","chat","الدعم المباشر"],["bc","الإشعارات","bell","إشعار جماعي"]]],
  ["المحتوى",[["welcome","رسالة الترحيب","spark","إشعار جماعي"],["home","الصفحة الرئيسية","grid","الرئيسية"]]],
  ["النظام",[["cfg","إعدادات التطبيق","gear","الموقع"],["sup","ربط المزودين","link","المزوّد"],["tools","أدوات وصيانة","wrench","أدوات"]]]
 ];
