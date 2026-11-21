@@ -1,5 +1,5 @@
 // ULTRA0 STORE - service worker: صفحة جديدة دايماً + إشعارات النظام
-const V = "u0-v4";
+const V = "u0-v5";
 self.addEventListener("install", e => { self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(() => self.clients.claim()));
