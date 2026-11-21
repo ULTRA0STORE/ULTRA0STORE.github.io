@@ -2071,8 +2071,8 @@ if(location.hash==="#account") setTimeout(()=>{ if(me) open(); else history.repl
   async function badge(){
     const b = fab.querySelector(".bd");
     if(!me || !sb){ b.style.display = "none"; return; }
-    const r = await sb.rpc("support_unread");
-    const n = (r && typeof r.data === "number") ? r.data : 0;
+    const r = await sb.from("support_messages").select("id",{count:"exact",head:true}).eq("user_id",me.id).eq("sender","admin").eq("read_by_user",false);
+    const n = (r && !r.error && typeof r.count === "number") ? r.count : 0;
     b.textContent = n > 9 ? "9+" : String(n); b.style.display = n > 0 ? "block" : "none";
   }
   async function open(){
