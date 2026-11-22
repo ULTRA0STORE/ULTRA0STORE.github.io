@@ -139,11 +139,11 @@ async function render(){
     };
   }
   if(tabName==="vip"){
-    const {data,error} = await sb.from("vip_levels").select("id,name,percent").order("percent");
+    const {data,error} = await sb.from("vip_levels").select("id,name,percent,min_spent").order("percent");
     if(error) return fail(error);
     levelsCache = data;
     v.innerHTML = '<div class="card"><b>إضافة مستوى VIP</b><input id="vn" placeholder="اسم المستوى (مثلا VIP1)"><input id="vp" type="number" step="0.1" min="0" max="100" placeholder="نسبة الخصم % (مثلا 1 أو 2)"><button id="vadd" style="width:100%">حفظ</button></div>'+
-      (data.map(l=>'<div class="card row"><div><span class="vip">'+esc(l.name)+'</span> <b>'+Number(l.percent)+'%</b></div><div><button class="gray" data-ve="'+l.id+'">تعديل النسبة</button> <button class="gray" data-vd="'+l.id+'">حذف</button></div></div>').join("") || '<div class="muted">لا يوجد مستويات</div>')+
+      (data.map(l=>'<div class="card row"><div><span class="vip">'+esc(l.name)+'</span> <b>'+Number(l.percent)+'%</b></div><div><small class="muted">من $'+Number(l.min_spent||0)+'</small> <button class="gray" data-vm="'+l.id+'">حد الإنفاق</button> <button class="gray" data-ve="'+l.id+'">تعديل النسبة</button> <button class="gray" data-vd="'+l.id+'">حذف</button></div></div>').join("") || '<div class="muted">لا يوجد مستويات</div>')+
       '<div class="muted">النسبة بتنطبق تلقائياً على كل مشتريات الزبون. لتفعيل VIP لزبون روح لتبويب المستخدمون.</div>';
     $("vadd").onclick = async ()=>{
       const n = $("vn").value.trim(), p = parseFloat($("vp").value);
@@ -156,6 +156,11 @@ async function render(){
       const p = parseFloat(s); if(!isFinite(p) || p<0 || p>100) return alert("نسبة غير صالحة");
       const {error} = await sb.rpc("admin_save_vip_level",{p_id:l.id, p_name:l.name, p_percent:p});
       if(error) return fail(error); render();
+    });
+    v.querySelectorAll("[data-vm]").forEach(b=>b.onclick=async()=>{
+      const l = levelsCache.find(x=>x.id==b.dataset.vm), t = prompt("حد الإنفاق (بالدولار) للوصول لـ "+l.name+" — 0 بدون حد", l.min_spent||0); if(t===null) return;
+      const n = parseFloat(t); if(!isFinite(n) || n<0) return alert("رقم غير صالح");
+      const {error} = await sb.rpc("admin_set_vip_min",{p_id:l.id, p_min:n}); if(error) return fail(error); render();
     });
     v.querySelectorAll("[data-vd]").forEach(b=>b.onclick=async()=>{
       if(!confirm("حذف المستوى؟ الزبائن اللي عليه بيرجعوا عاديين.")) return;
@@ -334,12 +339,23 @@ render=async function(){
   if(tabName!=="rates") return _r();
   const v=$("view"); const {data}=await sb.from("settings").select("value").eq("key","rates").maybeSingle();
   let o={}; try{ o=JSON.parse(data&&data.value)||{}; }catch(e){}
-  const F=[["SYP","ليرة سورية (كم ليرة بالدولار الواحد)"],["EGP","جنيه مصري (كم جنيه بالدولار)"],["JOD","دينار أردني (كم دينار بالدولار، مثلاً 0.71)"]];
-  v.innerHTML='<div class="card"><b>أسعار الصرف لعرض الأسعار</b><div class="muted">اكتب كم تساوي 1 دولار. اترك الخانة فاضية لإخفاء العملة من الموقع. الدولار دايماً موجود، والعمليات الفعلية بالدولار.</div>'+
-    F.map(f=>'<label class="muted">'+f[1]+'</label><input class="rt" data-k="'+f[0]+'" type="number" step="any" min="0" dir="ltr" value="'+esc(o[f[0]]||"")+'">').join("")+
-    '<button id="rsave" style="width:100%;margin-top:8px">حفظ</button></div>';
-  $("rsave").onclick=async()=>{ const val={}; v.querySelectorAll(".rt").forEach(i=>{ const n=parseFloat(i.value); if(n>0) val[i.dataset.k]=n; });
-    const {error}=await sb.from("settings").upsert({key:"rates",value:JSON.stringify(val)}); if(error) return fail(error); alert("تم الحفظ"); };
+  const X=o._x||{};
+  const F=[["SYP","ليرة سورية","ل.س",0],["EGP","جنيه مصري","ج.م",2],["JOD","دينار أردني","د.أ",2]];
+  Object.keys(X).forEach(k=>{ if(!F.some(f=>f[0]===k)) F.push([k,X[k].l||k,X[k].s||k,X[k].d||0,1]); });
+  const row=f=>'<div class="card" data-c="'+esc(f[0])+'" style="margin:8px 0"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(f[1])+' <span class="muted" dir="ltr">('+esc(f[0])+' • '+esc(f[2])+')</span></b>'+(f[4]?'<button class="gray" data-del="'+esc(f[0])+'" style="padding:4px 10px">حذف</button>':'')+'</div>'+
+    '<label class="muted">كم تساوي 1 دولار (اترك فاضي للإخفاء)</label><input class="rt" data-k="'+esc(f[0])+'" type="number" step="any" min="0" dir="ltr" value="'+esc(o[f[0]]||"")+'"></div>';
+  v.innerHTML='<div class="card"><b>أسعار الصرف لعرض الأسعار</b><div class="muted">الدولار دايماً موجود، والعمليات الفعلية بالدولار. العملة بتظهر للزبون بزر اختيار العملة.</div></div>'+F.map(row).join("")+
+    '<button id="rsave" style="width:100%;margin:8px 0">حفظ</button>'+
+    '<div class="card"><b>➕ إضافة عملة جديدة</b><label class="muted">الرمز (مثال: SAR)</label><input id="nc" maxlength="6" dir="ltr" placeholder="SAR"><label class="muted">الاسم</label><input id="nn" maxlength="30" placeholder="ريال سعودي"><label class="muted">الرمز اللي بيظهر بجنب السعر</label><input id="ns" maxlength="8" placeholder="ر.س"><label class="muted">كم منزلة عشرية</label><input id="nd" type="number" min="0" max="4" value="2" dir="ltr"><label class="muted">كم تساوي 1 دولار</label><input id="nr" type="number" step="any" min="0" dir="ltr" placeholder="3.75"><button id="nadd" style="width:100%;margin-top:8px">إضافة وحفظ</button></div>';
+  const collect=()=>{ const val={}; v.querySelectorAll(".rt").forEach(i=>{ const n=parseFloat(i.value); if(n>0) val[i.dataset.k]=n; }); if(Object.keys(X).length) val._x=X; return val; };
+  const save=async val=>{ const {error}=await sb.from("settings").upsert({key:"rates",value:JSON.stringify(val)}); if(error){ fail(error); return false; } return true; };
+  $("rsave").onclick=async()=>{ if(await save(collect())) alert("تم الحفظ"); };
+  v.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ if(!confirm("حذف هالعملة؟")) return; const k=b.dataset.del; delete X[k]; const val=collect(); delete val[k]; if(!Object.keys(X).length) delete val._x; if(await save(val)) render(); });
+  $("nadd").onclick=async()=>{ const c=$("nc").value.trim().toUpperCase(), n=$("nn").value.trim(), sy=$("ns").value.trim()||c, d=Math.min(4,Math.max(0,+$("nd").value||0)), r=parseFloat($("nr").value);
+    if(!/^[A-Z0-9]{2,6}$/.test(c)) return alert("الرمز: حروف إنجليزية من 2 إلى 6");
+    if(c==="USD"||["SYP","EGP","JOD"].includes(c)) return alert("هالعملة موجودة أصلاً فوق");
+    if(!n) return alert("اكتب اسم العملة"); if(!(r>0)) return alert("اكتب سعر الصرف");
+    X[c]={l:n,s:sy,d:d}; const val=collect(); val[c]=r; val._x=X; if(await save(val)) render(); };
 };
 })();
 
