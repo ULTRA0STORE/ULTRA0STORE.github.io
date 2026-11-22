@@ -875,10 +875,11 @@ let sb = null, me = null;
 try{ if(!SB_URL.startsWith("PASTE") && !SB_KEY.startsWith("PASTE")) sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){}
 const CURS = {USD:{s:"$",r:1,d:2,l:"دولار أمريكي"}};
 const CUR_META = {SYP:{s:"ل.س",d:0,l:"ليرة سورية"},EGP:{s:"ج.م",d:2,l:"جنيه مصري"},JOD:{s:"د.أ",d:2,l:"دينار أردني"}};
-function setRates(o){ const X = (o && o._x) || {}; const M = Object.assign({}, CUR_META);
-  Object.keys(X).forEach(k=>{ if(/^[A-Z0-9]{2,6}$/.test(k) && !CUR_META[k]) M[k] = {s:String(X[k].s||k).slice(0,8), d:Math.min(4,Math.max(0,+X[k].d||0)), l:String(X[k].l||k).slice(0,30)}; });
+function setRates(o){ const X = (o && o._x) || {}, M = {};
+  Object.keys(CUR_META).forEach(k=>{ M[k] = Object.assign({}, CUR_META[k], X[k]||{}); });
+  Object.keys(X).forEach(k=>{ if(/^[A-Z0-9]{2,6}$/.test(k) && !M[k]) M[k] = {s:String(X[k].s||k), d:+X[k].d||0, l:String(X[k].l||k)}; });
   Object.keys(CURS).forEach(k=>{ if(k!=="USD" && !M[k]) delete CURS[k]; });
-  Object.keys(M).forEach(k=>{ const r = Number(o&&o[k]); if(r>0) CURS[k] = {s:M[k].s,d:M[k].d,l:M[k].l,r:r}; else delete CURS[k]; }); }
+  Object.keys(M).forEach(k=>{ const r = Number(o&&o[k]); if(r>0) CURS[k] = {s:String(M[k].s||k).slice(0,8), d:Math.min(4,Math.max(0,+M[k].d||0)), l:String(M[k].l||k).slice(0,30), r:r}; else delete CURS[k]; }); }
 try{ setRates(JSON.parse(localStorage.getItem("u0_rates")||"{}")); }catch(e){}
 let CUR = "USD"; try{ CUR = localStorage.getItem("u0_cur")||"USD"; }catch(e){} if(!CURS[CUR]) CUR = "USD";
 const money = n => { const v = Number(n||0);
@@ -1186,7 +1187,7 @@ loadMe();
   const derr = m=>{ for(const k in ERR) if((m||"").includes(k)) return ERR[k]; return "صار خطأ، حاول مرة تانية"; };
   const copy = t=>{ (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>toast("انسخه يدوياً: "+t)); };
   const mImg = m=> m.kind==="qr" ? '<img src="'+QR+'" alt="QR">' : '';
-  const payImg = m=>{ const n = String(m.name||""); const f = /أقرب|اقرب|aqrab/i.test(n) ? "img/aqrab.png" : /شام|sham/i.test(n) ? "img/sham.png" : ""; return f ? '<img src="'+f+'" alt="" onerror="this.remove()">' : ""; };
+  const payImg = m=>{ const n = String(m.name||""); const f = m.image ? String(m.image) : (/أقرب|اقرب|aqrab/i.test(n) ? "img/aqrab.png" : /شام|sham/i.test(n) ? "img/sham.png" : ""); return f ? '<img src="'+esc(f)+'" alt="" onerror="this.remove()">' : ""; };
   const compress = f=>new Promise(res=>{ const im = new Image(); im.onload = ()=>{ const k = Math.min(1, 1000/Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); c.toBlob(b=>res(b),"image/jpeg",.7); URL.revokeObjectURL(im.src); }; im.onerror = ()=>res(null); im.src = URL.createObjectURL(f); });
   let proofFile = null;
   const usd = n=> "$"+Number(n).toFixed(3);
