@@ -1827,8 +1827,8 @@ background:linear-gradient(90deg,transparent,rgba(255,255,255,.35) 20%,#fff 50%,
 .wp-brand img{width:36px;height:36px;border-radius:11px;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 6px 16px rgba(224,30,55,.35)}
 .wp-brand b{font:900 17px/1.2 'Cairo',sans-serif;letter-spacing:2.5px;direction:ltr;color:#d8d0d1;
 background:linear-gradient(100deg,#8d8486 0%,#fff 38%,#ffc9d0 50%,#fff 62%,#8d8486 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:wpShine 3.4s ease-in-out infinite}
-.wp-t{font-size:20px;font-weight:800;color:#fff;margin:0 0 14px;line-height:1.7}
-.wp-b{margin:0;color:#e3253d;font-size:16.5px;font-weight:700;line-height:2.15;text-shadow:0 0 18px rgba(224,30,55,.35);overflow-wrap:anywhere}
+.wp-t{font-size:16px;font-weight:800;color:#fff;margin:0 0 14px;line-height:1.7}
+.wp-b{margin:0;color:#e3253d;font-size:13.5px;font-weight:700;line-height:2;text-shadow:0 0 18px rgba(224,30,55,.35);overflow-wrap:anywhere}
 .wp .w{display:inline-block;opacity:0;filter:blur(7px);transform:translateY(9px);animation:wpW .65s cubic-bezier(.2,.8,.2,1) forwards}
 .wp-sep{height:1px;margin:20px -22px 16px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent)}
 .wp-ok{position:relative;overflow:hidden;width:100%;height:54px;border:0;border-radius:999px;background:linear-gradient(180deg,#d4112d,#98001a);color:#fff;font:800 18px 'Cairo',sans-serif;box-shadow:0 12px 28px rgba(224,30,55,.38),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .15s}
@@ -2224,6 +2224,80 @@ if(location.hash==="#account") setTimeout(()=>{ if(me) open(); else history.repl
     const list = rows.length ? '<div class="vipl">'+rows.map((x,i)=>'<div class="vi'+(x.name===mine?' me':'')+'">'+medal(i)+'<div class="t"><b>'+esc(x.name)+'</b><small>'+(+x.min_spent>0?money(+x.min_spent)+' ← ':'')+'خصم '+(+x.percent)+'%</small></div>'+(x.name===mine?'<em>مستواك الحالي</em>':'')+'</div>').join("")+'</div>' : '<div class="note">ما في مستويات خصم حالياً.</div>';
     $("sheetBody").innerHTML = sum + list;
   };
+})();
+</script>
+<style>
+.u0d{font-size:12.5px;line-height:1.9;color:var(--muted,#bbb);background:var(--card,rgba(255,255,255,.03));border:1px solid var(--line,rgba(255,255,255,.08));border-radius:16px;padding:12px 14px;margin:0 0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.u0f{display:block;font-size:13px;margin:8px 0}.u0f input{width:100%;margin-top:4px}
+.u0share{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.12));background:transparent;color:inherit;margin:0 0 10px;cursor:pointer}
+.u0pm{display:block;font-size:11.5px;line-height:1.7;opacity:.8;white-space:pre-wrap;margin-top:3px}
+</style>
+<script>
+/* ===== تلوين الكلمات: [red]كلمة[/] أو [#ffcc00]نص[/] ===== */
+(function(){
+const NAMED={red:"#e3253d",green:"#22c55e",yellow:"#facc15",gold:"#f5b301",blue:"#3b82f6",white:"#ffffff",gray:"#9ca3af",orange:"#f97316",pink:"#ec4899",purple:"#a855f7"};
+const col=c=>{ c=String(c).toLowerCase(); return NAMED[c] || (/^#[0-9a-f]{3,8}$/.test(c)?c:null); };
+window.U0col=col;
+/* يأخذ نص مُهرّب (escaped) ويحوّل الوسوم لألوان */
+window.U0c=function(h){ return String(h).replace(/\[([#a-zA-Z0-9]+)\]([\s\S]*?)\[\/\]/g,(m,c,t)=>{ const k=col(c); return k?'<span style="color:'+k+'">'+t+'</span>':t; }); };
+window.U0strip=t=>String(t||"").replace(/\[([#a-zA-Z0-9]+)\]|\[\/\]/g,"");
+const escH=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+window.U0html=t=>window.U0c(escH(t));
+
+/* الشريط المتحرك */
+const tk=setInterval(()=>{ const sp=document.querySelector(".ticker span"); if(!sp) return; const t=sp.textContent; if(/\[[#a-zA-Z0-9]+\]/.test(t)){ sp.innerHTML=window.U0html(t); } },700); setTimeout(()=>clearInterval(tk),15000);
+
+/* نافذة الترحيب: تلوين + حجم خط قابل للتعديل */
+new MutationObserver(()=>{ const w=document.querySelector(".wp"); if(!w||w.dataset.u0) return; w.dataset.u0=1;
+  let cur=null;
+  w.querySelectorAll(".wp-t,.wp-b").forEach(box=>{ cur=null; box.querySelectorAll(".w").forEach(s=>{ let t=s.textContent;
+    const o=t.match(/^\[([#a-zA-Z0-9]+)\]/); if(o){ cur=col(o[1]); t=t.slice(o[0].length); }
+    let end=false; if(/\[\/\]$/.test(t)){ t=t.replace(/\[\/\]$/,""); end=true; }
+    const mid=t.match(/^(.*?)\[([#a-zA-Z0-9]+)\](.*)$/); if(mid){ t=mid[1]+mid[3]; cur=col(mid[2]); }
+    s.textContent=t; if(cur) s.style.color=cur; if(end) cur=null; }); });
+  const W=window.__u0wsize; if(W){ const t=w.querySelector(".wp-t"), b=w.querySelector(".wp-b"); if(t&&W.t) t.style.fontSize=W.t+"px"; if(b&&W.b) b.style.fontSize=W.b+"px"; }
+}).observe(document.body,{childList:true});
+try{ if(typeof sb!=="undefined"&&sb) sb.from("settings").select("value").eq("key","welcome").maybeSingle().then(r=>{ try{ const o=JSON.parse(r.data.value)||{}; window.__u0wsize={t:+o.ts||0,b:+o.bs||0}; }catch(e){} }); }catch(e){}
+
+/* ===== وصف المنتجات + حقول إضافية ===== */
+let PD={}; try{ if(sb) sb.from("settings").select("value").eq("key","pdesc").maybeSingle().then(r=>{ try{ PD=JSON.parse(r.data.value)||{}; }catch(e){} }); }catch(e){}
+const EXTRA={acc:[["البريد الإلكتروني للحساب","email","ltr"],["كلمة سر الحساب","text","ltr"]], linkmail:[["رابط الشراء","url","ltr"],["الإيميل الذي أنشأت منه رابط الدفع","email","ltr"]]};
+new MutationObserver(()=>{
+  const box=document.querySelector("#buybox .buybox"); if(!box||box.dataset.u0) return; box.dataset.u0=1;
+  const sel=document.querySelector("#prods .pcard.sel"); const pid=sel&&sel.dataset.p, cat=window.__cat;
+  const d=(pid&&PD["p"+pid])||(cat&&PD["c"+cat.id])||""; 
+  if(d){ const n=document.createElement("div"); n.className="u0d"; n.innerHTML=window.U0html(d); box.querySelector("b").after(n); }
+  let t=null; try{ t=typeFor(cat); }catch(e){}
+  if(EXTRA[t]){ const p=$("pid"); if(!p) return; p.parentElement.style.display="none"; p.value="";
+    const ins=EXTRA[t].map(f=>{ const l=document.createElement("label"); l.className="field u0f"; l.innerHTML=escH(f[0])+' <span style="color:#e3253d">*</span><input type="'+f[1]+'" dir="'+f[2]+'" placeholder="'+escH(f[0])+'">'; p.parentElement.before(l); return l.querySelector("input"); });
+    const sync=()=>{ p.value = ins.every(i=>i.value.trim()) ? ins.map(i=>i.value.trim()).join(" | ") : ""; };
+    ins.forEach(i=>i.oninput=sync);
+    const n=document.createElement("div"); n.className="u0pm"; n.textContent="تأكد من صحة البيانات — لا يمكن تعديلها بعد الإرسال."; ins[ins.length-1].parentElement.after(n);
+  }
+}).observe(document.body,{childList:true,subtree:true});
+
+/* ===== روابط مباشرة للأقسام (للمشاركة ومحركات البحث) ===== */
+const BASE=document.title;
+function setLink(cat){ try{ history.replaceState(history.state,"",location.pathname+location.search+"#c="+cat.id); document.title=cat.name+" | "+BASE;
+  let m=document.querySelector('meta[name="description"]'); if(!m){ m=document.createElement("meta"); m.name="description"; document.head.appendChild(m); }
+  m.content="اشحن "+cat.name+" بأفضل الأسعار وتنفيذ سريع من ULTRA0 STORE"; }catch(e){} }
+function shareBtn(cat){ const b=document.createElement("button"); b.className="u0share"; b.type="button"; b.textContent="🔗 نسخ رابط "+cat.name;
+  b.onclick=async()=>{ const u=location.origin+location.pathname+"#c="+cat.id; try{ if(navigator.share) await navigator.share({title:cat.name,url:u}); else { await navigator.clipboard.writeText(u); toast("تم نسخ الرابط"); } }catch(e){} }; return b; }
+const _ocL=openContact; openContact=async function(cat){ setLink(cat); const r=_ocL(cat); const pr=$("prods"); if(pr) pr.before(shareBtn(cat)); return r; };
+try{ const _pk=pick; pick=function(k){ setLink(k); return _pk(k); }; }catch(e){}
+document.addEventListener("click",e=>{ if(e.target.closest("#sheetClose,#pgBack")&&/^#c=/.test(location.hash)){ history.replaceState(history.state,"",location.pathname+location.search); document.title=BASE; } },true);
+async function openFromHash(){ const m=location.hash.match(/^#c=(\d+)/); if(!m||!sb) return; await loadTree(); const c=tree.find(x=>x.id===+m[1]); if(!c) return;
+  const chain=[]; let x=c; while(x){ chain.unshift(x.id); x=tree.find(y=>y.id===x.parent_id); }
+  if(tree.some(y=>y.parent_id===c.id)){ pg={stack:chain,base:0,title:c.name,games:false}; $("page").classList.add("show"); renderPage(); setLink(c); }
+  else { pg={stack:chain.slice(0,-1),base:0,title:c.name,games:false}; if(chain.length>1){ $("page").classList.add("show"); renderPage(); } openContact(c); }
+  document.querySelectorAll(".wp").forEach(w=>w.remove()); }
+setTimeout(openFromHash,600); addEventListener("hashchange",openFromHash);
+
+/* ===== وصف طرق الإيداع ===== */
+let PMD={}; try{ if(sb) sb.from("settings").select("value").eq("key","pm_desc").maybeSingle().then(r=>{ try{ PMD=JSON.parse(r.data.value)||{}; }catch(e){} }); }catch(e){}
+new MutationObserver(()=>{ const names=Object.keys(PMD); if(!names.length) return; const pg=document.getElementById("dep"); if(!pg||!pg.classList.contains("show")) return;
+  pg.querySelectorAll("b,strong,span,h3,div").forEach(el=>{ if(el.children.length||el.dataset.u0pm) return; const t=el.textContent.trim(); if(PMD[t]&&!(el.nextElementSibling&&el.nextElementSibling.classList.contains("u0pm"))){ el.dataset.u0pm=1; const n=document.createElement("small"); n.className="u0pm"; n.innerHTML=window.U0html(PMD[t]); el.after(n); } });
+}).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 </body>

@@ -291,7 +291,7 @@ render=async function(){
   const v=$("view"); const {data:rows}=await sb.from("settings").select("key,value").in("key",["announcement","ann_color","ann_dir","ann_speed"]);
   const o={}; (rows||[]).forEach(x=>o[x.key]=x.value);
   const col=/^#[0-9a-fA-F]{6}$/.test(o.ann_color||"")?o.ann_color:"#e01e37", dir=o.ann_dir||"rtl", spd=o.ann_speed||"22";
-  v.innerHTML='<div class="card"><b>نص الشريط المتحرك بالموقع</b><input id="an" value="'+esc(o.announcement||"")+'" placeholder="اكتب الإعلان (فاضي = النص الافتراضي)">'+
+  v.innerHTML='<div class="card"><b>نص الشريط المتحرك بالموقع</b><input id="an" value="'+esc(o.announcement||"")+'" placeholder="اكتب الإعلان (فاضي = النص الافتراضي)"><div class="muted" style="font-size:12px">لون لكلمة معيّنة: <b dir="ltr">[yellow]كلمة[/]</b></div>'+
    '<b>لون الخط</b><input id="anc" type="color" value="'+col+'" style="height:44px;padding:2px">'+
    '<b>اتجاه الحركة</b><select id="and"><option value="rtl"'+(dir==="rtl"?" selected":"")+'>من اليمين لليسار</option><option value="ltr"'+(dir==="ltr"?" selected":"")+'>من اليسار لليمين</option><option value="none"'+(dir==="none"?" selected":"")+'>بدون حركة (ثابت)</option></select>'+
    '<b>مدة الدورة بالثواني (أقل = أسرع)</b><input id="ans2" type="number" min="5" max="120" value="'+esc(spd)+'">'+
@@ -427,7 +427,7 @@ render = async function(){
   const v = $("view"); v.innerHTML = '<div class="muted">جاري التحميل...</div>';
   const [c,s] = await Promise.all([sb.from("categories").select("id,parent_id,name").order("sort").order("id"), sb.from("settings").select("value").eq("key","input_types").maybeSingle()]);
   if(c.error) return fail(c.error); catsCache = c.data; let M = {}; try{ M = JSON.parse(s.data.value)||{}; }catch(e){}
-  const O = [["","تلقائي"],["id","رقم اللاعب (ID)"],["link","رابط"],["phone","رقم هاتف"],["none","بدون إدخال"]];
+  const O = [["","تلقائي"],["id","رقم اللاعب (ID)"],["link","رابط"],["phone","رقم هاتف"],["acc","إيميل + كلمة سر (شحن حساب)"],["linkmail","رابط شراء + إيميل"],["none","بدون إدخال"]];
   v.innerHTML = '<div class="muted" style="margin-bottom:8px">حدّد شو بيُطلب من الزبون عند الشراء. الاختيار بينطبق على الأقسام اللي تحته كمان. «تلقائي» = النظام بيخمّن.</div><input id="ifl" placeholder="بحث عن قسم..."><div id="il"></div>';
   const draw = ()=>{ const q = $("ifl").value.trim().toLowerCase();
     $("il").innerHTML = catsCache.filter(x=>!q||pathOf(x.id).toLowerCase().includes(q)).slice(0,80).map(x=>'<div class="card row"><span>'+esc(pathOf(x.id))+'</span><select data-c="'+x.id+'" style="width:auto;margin:0">'+O.map(o=>'<option value="'+o[0]+'"'+((M[x.id]||"")==o[0]?" selected":"")+'>'+o[1]+'</option>').join("")+'</select></div>').join("");
@@ -458,13 +458,13 @@ async function cfgView(){
 }
 const kopt=k=>'<option value="code"'+(k!=="qr"?" selected":"")+'>كود/رقم</option><option value="qr"'+(k==="qr"?" selected":"")+'>QR</option>';
 async function pmView(){
-  const v=$("view"); const {data,error}=await sb.from("deposit_methods").select("*").order("sort").order("id"); if(error) return fail(error);
+  const v=$("view"); const {data,error}=await sb.from("deposit_methods").select("*").order("sort").order("id"); if(error) return fail(error); let PMD={}; try{ const r=await sb.from("settings").select("value").eq("key","pm_desc").maybeSingle(); PMD=JSON.parse(r.data.value)||{}; }catch(e){}
   v.innerHTML='<div class="card"><b>إضافة طريقة دفع</b><input id="pn" placeholder="الاسم (مثال: شام كاش)"><input id="pa" dir="ltr" placeholder="رقم الحساب / الكود"><input id="pm" type="number" placeholder="أقل مبلغ بالليرة"><select id="pk">'+kopt("code")+'</select><button id="pd" style="width:100%">إضافة</button></div>'+
-   (data||[]).map(m=>'<div class="card" data-m="'+m.id+'"><b>'+esc(m.name)+(m.active?"":" (موقوفة)")+'</b><input class="n" value="'+esc(m.name)+'"><input class="a" dir="ltr" value="'+esc(m.account)+'"><input class="mn" type="number" value="'+esc(m.min_syp)+'" placeholder="أقل مبلغ"><input class="so" type="number" value="'+esc(m.sort)+'" placeholder="الترتيب"><input class="im" dir="ltr" value="'+esc(m.image||"")+'" placeholder="رابط صورة الشعار (مثال: img/sham.png) — اتركه فاضي بدون صورة"><select class="k">'+kopt(m.kind)+'</select><div class="two"><button class="sv">حفظ</button><button class="gray tg">'+(m.active?"إيقاف":"تفعيل")+'</button></div><button class="gray dl" style="width:100%;margin-top:6px">حذف</button></div>').join("");
+   (data||[]).map(m=>'<div class="card" data-m="'+m.id+'"><b>'+esc(m.name)+(m.active?"":" (موقوفة)")+'</b><input class="n" value="'+esc(m.name)+'"><input class="a" dir="ltr" value="'+esc(m.account)+'"><input class="mn" type="number" value="'+esc(m.min_syp)+'" placeholder="أقل مبلغ"><input class="so" type="number" value="'+esc(m.sort)+'" placeholder="الترتيب"><input class="im" dir="ltr" value="'+esc(m.image||"")+'" placeholder="رابط صورة الشعار (مثال: img/sham.png) — اتركه فاضي بدون صورة"><textarea class="ds" rows="3" placeholder="وصف يظهر للزبون تحت اسم الطريقة (تلوين: [red]كلمة[/])">'+esc(PMD[m.name]||"")+'</textarea><select class="k">'+kopt(m.kind)+'</select><div class="two"><button class="sv">حفظ</button><button class="gray tg">'+(m.active?"إيقاف":"تفعيل")+'</button></div><button class="gray dl" style="width:100%;margin-top:6px">حذف</button></div>').join("");
   $("pd").onclick=async()=>{ const n=$("pn").value.trim(); if(!n) return alert("اكتب الاسم");
     const {error}=await sb.from("deposit_methods").insert({name:n,account:$("pa").value.trim(),min_syp:+$("pm").value||0,kind:$("pk").value,active:true,sort:(data||[]).length+1}); if(error) return fail(error); pmView(); };
   v.querySelectorAll("[data-m]").forEach(d=>{ const id=+d.dataset.m, q=s=>d.querySelector(s), up=async o=>{ const {error}=await sb.from("deposit_methods").update(o).eq("id",id); if(error) return fail(error); pmView(); };
-    q(".sv").onclick=()=>up({name:q(".n").value.trim(),account:q(".a").value.trim(),min_syp:+q(".mn").value||0,sort:+q(".so").value||0,kind:q(".k").value,image:q(".im").value.trim()||null});
+    q(".sv").onclick=async()=>{ const nm=q(".n").value.trim(), dv=q(".ds").value.trim(); delete PMD[(data.find(x=>x.id===id)||{}).name]; if(dv) PMD[nm]=dv; await sb.from("settings").upsert({key:"pm_desc",value:JSON.stringify(PMD)}); up({name:q(".n").value.trim(),account:q(".a").value.trim(),min_syp:+q(".mn").value||0,sort:+q(".so").value||0,kind:q(".k").value,image:q(".im").value.trim()||null}); };
     q(".tg").onclick=()=>up({active:!(data.find(x=>x.id===id)||{}).active});
     q(".dl").onclick=async()=>{ if(!confirm("حذف نهائي؟ (إذا في إيداعات مرتبطة استخدم إيقاف)")) return; const {error}=await sb.from("deposit_methods").delete().eq("id",id); if(error) return fail(error); pmView(); }; });
 }
@@ -624,6 +624,7 @@ addTab("إشعار جماعي","bc",async function bc(){
    '<label class="muted">اسم المتجر (فوق)</label><input id="wbr" maxlength="40" placeholder="ULTRA0 STORE" value="'+esc(wl.brand||"")+'">'+
    '<label class="muted">العنوان (أبيض)</label><input id="wt" maxlength="120" placeholder="أهلاً وسهلاً بكم ." value="'+esc(wl.t||"")+'">'+
    '<label class="muted">النص (أحمر)</label><textarea id="wb" rows="4" maxlength="600" placeholder="اكتب رسالتك هون">'+esc(wl.b||"")+'</textarea>'+
+   '<div class="muted" style="font-size:12px">لتلوين أي كلمة: <b dir="ltr">[yellow]كلمة[/]</b> (red green yellow gold blue orange pink purple white)</div><label class="muted">حجم خط العنوان</label><input id="wts" type="number" min="10" max="30" placeholder="16" value="'+esc(wl.ts||"")+'"><label class="muted">حجم خط النص</label><input id="wbs" type="number" min="10" max="26" placeholder="13.5" value="'+esc(wl.bs||"")+'">'+
    '<label class="muted">كلمة الزر</label><input id="wok" maxlength="30" placeholder="حسناً" value="'+esc(wl.ok||"")+'">'+
    '<label class="muted">زر إضافي (اختياري) – الاسم والرابط</label><input id="wlt" maxlength="40" placeholder="مثال: تابعنا على واتساب" value="'+esc(wl.linkT||"")+'"><input id="wl" dir="ltr" placeholder="https://..." value="'+esc(wl.link||"")+'">'+
    '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="wk" style="width:auto"'+(wl.kash===false?"":" checked")+'> مدّ الحروف (يـرجـى مـن الـجـمـيـع)</label>'+
@@ -638,7 +639,7 @@ addTab("إشعار جماعي","bc",async function bc(){
     const {data,error} = await sb.functions.invoke("send-push",{body:{broadcast:{title:t,body:b,email:e||undefined}}}); $("bs").disabled = false;
     if(error || (data && data.error)){ const fe = error && /Failed to send|fetch/i.test(error.message||""); return alert("فشل الإرسال: "+(fe ? "الدالة send-push غير منشورة أو اسمها غلط أو الأسرار ناقصة بـ Supabase (راجع الخطوة 2 و3 من SETUP)" : ((data && data.error) || error.message))); } alert("تم الإرسال إلى "+data.sent+" جهاز"); bc();
   };
-  const wForm = ()=>{ const g = id=>$(id).value.trim(), o = {brand:g("wbr"), t:g("wt"), b:g("wb"), ok:g("wok"), linkT:g("wlt"), link:g("wl"), kash:$("wk").checked, every:$("we").checked, off:$("woff").checked};
+  const wForm = ()=>{ const g = id=>$(id).value.trim(), o = {brand:g("wbr"), t:g("wt"), b:g("wb"), ok:g("wok"), linkT:g("wlt"), link:g("wl"), kash:$("wk").checked, every:$("we").checked, off:$("woff").checked, ts:g("wts"), bs:g("wbs")};
     Object.keys(o).forEach(k=>{ if(o[k]==="") delete o[k]; }); return o; };
   $("wpv").onclick = ()=>{ const o = wForm(); if(o.link && !/^https?:\/\//i.test(o.link)) return alert("الرابط لازم يبلش بـ https://");
     const p = {t:o.t||"أهلاً وسهلاً بكم .", b:o.b||"تابعوا قناتنا على واتساب ليصلكم كل جديد من العروض والأسعار أولاً بأول", brand:o.brand, ok:o.ok, kash:o.kash};
@@ -719,7 +720,7 @@ const G=[
  ["المبيعات",[["orders","الطلبات","bag","الطلبات"],["cmp","الشكاوى","alert","الشكاوى"]]],
  ["المحفظة",[["deps","طلبات الإيداع","wallet","الإيداعات"],["pm","طرق الإيداع","card","طرق الدفع"],["sum","الرصيد والأرباح","coins","الملخص"]]],
  ["المستخدمون",[["users","المستخدمون","users","المستخدمون"],["ban","الحظر","ban","الحظر"]]],
- ["الكتالوج",[["cats","الأقسام","grid","الأقسام"],["products","المنتجات","box","المنتجات"],["ann","الشريط والإعلان","mega","الإعلان"],["inp","نوع الإدخال","input","نوع الإدخال"]]],
+ ["الكتالوج",[["cats","الأقسام","grid","الأقسام"],["products","المنتجات","box","المنتجات"],["ann","الشريط والإعلان","mega","الإعلان"],["inp","نوع الإدخال","input","نوع الإدخال"],["pdesc","أوصاف المنتجات","report","أوصاف المنتجات"]]],
  ["التسعير",[["vip","مستويات الخصم","trend","VIP"],["gift","أكواد الهدايا","gift","أكواد الهدايا"],["rates","العملات","coins","العملات"]]],
  ["الدعم",[["support","الدعم المباشر","chat","الدعم المباشر"],["bc","الإشعارات","bell","إشعار جماعي"]]],
  ["المحتوى",[["welcome","رسالة الترحيب","spark","إشعار جماعي"],["home","الصفحة الرئيسية","grid","الرئيسية"]]],
@@ -806,6 +807,31 @@ let start="stats"; try{ start=sessionStorage.getItem("u0_adm_tab")||"stats"; }ca
 const s0=ALL.find(x=>x.k===start)||ALL[0];
 cur=s0.k; $("aG").textContent=s0.g; $("aT").textContent=s0.n;
 if(s0.k==="stats") tabName="stats"; else { tabName = s0.k==="welcome" ? "bc" : s0.k; }
+})();
+</script>
+<script>
+/* ===== أوصاف المنتجات (مع تلوين الكلمات) ===== */
+(function(){
+const bar=document.querySelector(".tabs"); if(!bar) return;
+const b=document.createElement("button"); b.textContent="أوصاف المنتجات"; b.dataset.t="pdesc"; bar.appendChild(b);
+b.onclick=()=>{ tabName="pdesc"; document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b)); render(); };
+const _r=render; render=async function(){ if(tabName!=="pdesc") return _r(); return view(); };
+const HELP='<div class="muted" style="line-height:1.9">لتلوين أي كلمة اكتبها هيك: <b dir="ltr">[yellow]ضمن أوقات العمل[/]</b><br>الألوان: red green yellow gold blue orange pink purple white gray أو كود مثل <span dir="ltr">[#ff9900]نص[/]</span>. كل كلمة ممكن تكون بلون.</div>';
+const prev=t=>String(t||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])).replace(/\[([#a-zA-Z0-9]+)\]([\s\S]*?)\[\/\]/g,(m,c,x)=>'<span style="color:'+({red:"#e3253d",green:"#22c55e",yellow:"#facc15",gold:"#f5b301",blue:"#3b82f6",white:"#fff",gray:"#9ca3af",orange:"#f97316",pink:"#ec4899",purple:"#a855f7"}[c.toLowerCase()]||c)+'">'+x+'</span>');
+async function view(){
+  const v=$("view"); v.innerHTML='<div class="muted">جاري التحميل...</div>';
+  const [c,p,s]=await Promise.all([sb.from("categories").select("id,parent_id,name").order("sort").order("id"), sb.from("products").select("id,name,category_id").order("sort").limit(3000), sb.from("settings").select("value").eq("key","pdesc").maybeSingle()]);
+  if(c.error) return fail(c.error); let D={}; try{ D=JSON.parse(s.data.value)||{}; }catch(e){}
+  const cats=c.data||[], prods=p.data||[]; const path=id=>{ const a=[]; let x=cats.find(y=>y.id===id); while(x){ a.unshift(x.name); x=cats.find(y=>y.id===x.parent_id); } return a.join(" › "); };
+  v.innerHTML='<div class="card"><b>📝 وصف المنتج يلي بيظهر للزبون</b>'+HELP+'<input id="pdq" placeholder="ابحث عن منتج أو قسم..."><div id="pdl"></div></div>';
+  const draw=()=>{ const q=$("pdq").value.trim().toLowerCase();
+    const items=cats.map(x=>({k:"c"+x.id,n:"📁 "+path(x.id)+" (كل منتجات القسم)"})).concat(prods.map(x=>({k:"p"+x.id,n:"🛒 "+path(x.category_id)+" › "+x.name})));
+    const list=items.filter(i=>q ? i.n.toLowerCase().includes(q) : D[i.k]).slice(0,40);
+    $("pdl").innerHTML=(list.length?"":'<div class="muted">'+(q?"ما في نتائج":"اكتب بالبحث لتختار منتج")+'</div>')+list.map(i=>'<div class="card" data-k="'+i.k+'"><b style="font-size:13px">'+esc(i.n)+(D[i.k]?' ✅':'')+'</b><textarea rows="5" style="font-size:12.5px">'+esc(D[i.k]||"")+'</textarea><div class="pv muted" style="font-size:12px;white-space:pre-wrap;line-height:1.9;border:1px dashed #444;border-radius:10px;padding:8px;margin:6px 0">'+prev(D[i.k])+'</div><button class="sv" style="width:100%">حفظ الوصف</button></div>').join("");
+    $("pdl").querySelectorAll("[data-k]").forEach(d=>{ const ta=d.querySelector("textarea"); ta.oninput=()=>d.querySelector(".pv").innerHTML=prev(ta.value);
+      d.querySelector(".sv").onclick=async()=>{ const t=ta.value.trim(); if(t) D[d.dataset.k]=t; else delete D[d.dataset.k]; const {error}=await sb.from("settings").upsert({key:"pdesc",value:JSON.stringify(D)}); if(error) return fail(error); alert("تم الحفظ ✅"); }; }); };
+  $("pdq").oninput=draw; draw();
+}
 })();
 </script>
 </body>
