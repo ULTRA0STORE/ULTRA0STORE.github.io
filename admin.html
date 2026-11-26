@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>لوحة الإدارة | ULTRA0</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<title>لوحة الإدارة | ULTRA STORE</title>
 <script>
 /* لوحة الإدارة صارت جوا الموقع: إذا انفتحت لحالها رجّعها للموقع */
 (function(){ var q=new URLSearchParams(location.search); if(!q.has("embed")){ location.replace("./#admin"); return; } document.documentElement.classList.add("embed"); })();
@@ -39,7 +40,7 @@ button.gray{background:#2a2a2a;border:1px solid var(--line)}
 *{-webkit-tap-highlight-color:transparent}button:focus:not(:focus-visible){outline:none}</style>
 </head>
 <body><div class="box">
-<h1>لوحة إدارة ULTRA0</h1>
+<h1>لوحة إدارة ULTRA STORE</h1>
 <div id="login" style="display:none" class="card">
   <input id="em" type="email" dir="ltr" placeholder="البريد الإلكتروني" autocomplete="email">
   <input id="pw" type="password" dir="ltr" placeholder="كلمة السر" autocomplete="current-password">
@@ -553,7 +554,7 @@ async function poll(){
     const n = (a.count||0)+(b.count||0); if(last!==null && n>last){ beep(); document.title = "🔔 جديد! | لوحة الإدارة"; } last = n; }catch(e){}
 }
 setInterval(poll,30000); setTimeout(poll,5000);
-document.addEventListener("click",()=>{ if(document.title.indexOf("🔔")===0) document.title = "لوحة الإدارة | ULTRA0"; });
+document.addEventListener("click",()=>{ if(document.title.indexOf("🔔")===0) document.title = "لوحة الإدارة | ULTRA STORE"; });
 })();
 
 /* ===== بحث وفلتر الطلبات ===== */
@@ -621,7 +622,7 @@ addTab("إشعار جماعي","bc",async function bc(){
   let wl = {}; try{ wl = JSON.parse(w.data.value)||{}; }catch(e){}
   v.innerHTML = '<div class="card"><b>📣 إشعار جماعي</b><div class="muted">الأجهزة المشتركة: <b>'+(c.count||0)+'</b></div><input id="bt" maxlength="80" placeholder="العنوان (مثال: عرض اليوم 🔥)"><textarea id="bb" rows="3" maxlength="300" placeholder="نص الإشعار"></textarea><input id="be" dir="ltr" placeholder="إيميل زبون معيّن (فاضي = للجميع)"><button id="bs" style="width:100%">إرسال</button></div>'+
    '<div class="card"><b>👋 نافذة الترحيب</b><div class="muted">النافذة يلي بتطلع للزبون أول ما يفوت عالموقع. عدّل كل كلمة فيها متل ما بدك.</div>'+
-   '<label class="muted">اسم المتجر (فوق)</label><input id="wbr" maxlength="40" placeholder="ULTRA0 STORE" value="'+esc(wl.brand||"")+'">'+
+   '<label class="muted">اسم المتجر (فوق)</label><input id="wbr" maxlength="40" placeholder="ULTRA STORE" value="'+esc(wl.brand||"")+'">'+
    '<label class="muted">العنوان (أبيض)</label><input id="wt" maxlength="120" placeholder="أهلاً وسهلاً بكم ." value="'+esc(wl.t||"")+'">'+
    '<label class="muted">النص (أحمر)</label><textarea id="wb" rows="4" maxlength="600" placeholder="اكتب رسالتك هون">'+esc(wl.b||"")+'</textarea>'+
    '<div class="muted" style="font-size:12px">لتلوين أي كلمة: <b dir="ltr">[yellow]كلمة[/]</b> (red green yellow gold blue orange pink purple white)</div><label class="muted">حجم خط العنوان</label><input id="wts" type="number" min="10" max="30" placeholder="16" value="'+esc(wl.ts||"")+'"><label class="muted">حجم خط النص</label><input id="wbs" type="number" min="10" max="26" placeholder="13.5" value="'+esc(wl.bs||"")+'">'+

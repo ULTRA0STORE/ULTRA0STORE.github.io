@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ULTRA0 STORE</title>
+<title>ULTRA STORE</title>
 <link rel="manifest" href="manifest.json">
-<meta property="og:title" content="ULTRA0 STORE">
+<meta property="og:title" content="ULTRA STORE">
 <meta property="og:description" content="شحن ألعاب وبطاقات رقمية وخدمات بأسعار منافسة">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0a0003">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ULTRA0">
-<meta name="description" content="ULTRA0 STORE - شحن ألعاب وبطاقات رقمية وخدمات بأسعار منافسة">
+<meta name="apple-mobile-web-app-title" content="ULTRA STORE">
+<meta name="description" content="ULTRA STORE - شحن ألعاب وبطاقات رقمية وخدمات بأسعار منافسة">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#000;--card:#110709;--card2:#1c0a0d;--line:#3a1217;--main:#b3001b;--main2:#e01e37;--text:#f6ecec;--muted:#a58b8e;--sheet:#070304;--head:rgba(0,0,0,.92);
@@ -497,6 +498,12 @@ body.adm-open .supfab{display:none!important}
 .odet .orow.rep{flex-wrap:wrap;border-bottom:0;position:relative;align-items:flex-start}
 .odet .rtx{width:100%;white-space:pre-wrap;word-break:break-word;color:var(--text);background:rgba(0,0,0,.18);border-radius:10px;padding:10px;margin-top:6px;font-size:14px;line-height:1.7}
 .odet .cpy{border:1px solid var(--line);background:var(--card2,var(--card));color:var(--text);border-radius:10px;padding:4px 12px;font:700 12px Cairo,system-ui}
+.pdesc{margin:6px 0 8px;font-size:13px;line-height:1.8;color:var(--muted);white-space:pre-wrap}
+
+header .logo{display:flex;align-items:center;justify-content:center;gap:7px}
+header .logo .hlogo{height:30px;width:auto;flex:none;filter:drop-shadow(0 0 6px rgba(224,30,55,.45))}
+.alogo{width:auto!important;height:150px!important;border-radius:0!important;object-fit:contain;filter:drop-shadow(0 0 14px rgba(224,30,55,.35))}
+.lp-logo{display:block;margin:0 auto 10px;height:96px;width:auto;filter:drop-shadow(0 0 16px rgba(224,30,55,.5))}
 </style>
 </head>
 <body>
@@ -507,13 +514,13 @@ body.adm-open .supfab{display:none!important}
     <button class="icon-btn" id="themeBtn" aria-label="الوضع"></button>
     <button class="icon-btn" id="bellBtn" aria-label="الإشعارات" style="display:none"><span class="bdot" id="bdot"></span></button>
   </div>
-  <div class="logo">ULTRA0 STORE</div>
+  <div class="logo"><img class="hlogo" src="logo-mark.png" alt="" onerror="this.remove()"><span>ULTRA STORE</span></div>
   <button class="login" id="loginBtn">تسجيل الدخول</button>
   <button class="bal" id="balChip" aria-label="رصيدي" style="display:none"><i id="balIco"></i><b id="balTx">0.00</b></button>
 </header>
 
 <nav class="menu" id="menu">
-  <h3>ULTRA0 STORE</h3>
+  <h3>ULTRA STORE</h3>
   <div class="mprof" id="mProf" style="display:none"></div>
   <button class="mi" id="mHome"></button>
   <button class="mi" id="mDep"></button>
@@ -536,7 +543,7 @@ body.adm-open .supfab{display:none!important}
   <div class="dots" id="dots"></div>
 </section>
 
-<div class="ticker"><span>أهلاً وسهلاً بكم في متجر ULTRA0 STORE — حيث ستجد أفضل الخدمات وأفضل الأسعار — الـتـرا قـريـبـاً لـلـعـالـمـيـه</span></div>
+<div class="ticker"><span>أهلاً وسهلاً بكم في متجر ULTRA STORE — حيث ستجد أفضل الخدمات وأفضل الأسعار — الـتـرا قـريـبـاً لـلـعـالـمـيـه</span></div>
 
 <div class="social" id="social" style="display:none"></div>
 
@@ -548,7 +555,7 @@ body.adm-open .supfab{display:none!important}
 </main>
 
 <footer style="text-align: center; padding: 20px;">
-  <p>ULTRA0 STORE 2026© — جميع الحقوق محفوظة</p>
+  <p>ULTRA STORE 2026© — جميع الحقوق محفوظة</p>
   <div style="margin-top: 10px;">
     <a href="privacy.html" style="color:var(--main2); margin: 0 10px; text-decoration: underline;">سياسة الخصوصية</a> | 
     <a href="terms.html" style="color:var(--main2); margin: 0 10px; text-decoration: underline;">شروط الخدمة</a>
@@ -585,7 +592,7 @@ const TG_CHANNEL = "https://t.me/ULTRA0STORE";
 const IG = "https://www.instagram.com/ultr3_st0re_0";
 
 let slides = [
-  {img:"banner-1.jpg", alt:"ULTRA0 STORE - Digital Game Top-Ups & Gift Cards. Fast. Secure. Instant Delivery", go:"grid-top"},
+  {img:"banner-1.jpg", alt:"ULTRA STORE - Digital Game Top-Ups & Gift Cards. Fast. Secure. Instant Delivery", go:"grid-top"},
   {t:"انضم لقناة تيليجرام", s:"عروض وأسعار يومية", href:TG_CHANNEL},
   {t:"انضم لقناة واتساب", s:"كل جديد أول بأول", href:WA_CHANNEL}
 ];
@@ -796,7 +803,9 @@ async function openContact(cat){
     '<a class="buy tg" style="padding:13px" target="_blank" rel="noopener" href="'+TG_CHANNEL+'">تيليجرام</a></div></div>');
   const showContact = ()=>{ if($("contact")) $("contact").style.display = ""; };
   if(!sb) return showContact();
-  const {data} = await sb.from("products").select("id,name,price,qty_min,qty_max").eq("category_id", cat.id).eq("active", true).eq("avail", true).order("sort").order("id");
+  const pq = c=>sb.from("products").select(c).eq("category_id", cat.id).eq("active", true).eq("avail", true).order("sort").order("id");
+  let {data, error:pe} = await pq("id,name,price,qty_min,qty_max,description");
+  if(pe) ({data} = await pq("id,name,price,qty_min,qty_max"));
   if(!data || !data.length){ showContact(); return; }
   if(!$("prods")) return;
   const img = imgOf(cat.id);
@@ -804,7 +813,7 @@ async function openContact(cat){
   $("prods").querySelectorAll(".pcard").forEach(c=>c.onclick=()=>{
     const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
     $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
-    $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b><label class="field">رقم اللاعب (ID)<input id="pid" dir="ltr" placeholder="اكتب الـ ID هنا"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
+    $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b>'+(p.description?'<div class="pdesc">'+esc(p.description)+'</div>':'')+'<label class="field">رقم اللاعب (ID)<input id="pid" dir="ltr" placeholder="اكتب الـ ID هنا"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
     const qtyNow = ()=> ranged ? Math.min(p.qty_max, Math.max(p.qty_min, parseInt($("pq").value)||p.qty_min)) : 1;
     const upd = ()=>{ $("tot").textContent = "الإجمالي: "+money(vprice(p.price*qtyNow()))+(vpct()?" (خصم "+me.vip.name+" "+vpct()+"%)":""); };
     if(ranged) $("pq").oninput = upd;
@@ -860,7 +869,7 @@ $("pgSearch").addEventListener("input", renderPage);
 
 function openAbout(){
   openSheet("من نحن",
-    '<div class="about"><img class="alogo" src="icon-192.png" alt="ULTRA0"><p>نحن فريق 𝘜𝘓𝘛𝘙𝘈0-𝘚𝘛𝘖𝘙𝘌 نؤمن بأن تجربة الشراء يجب أن تكون بسيطة، سريعة، وآمنة. تأسسنا لنكون وجهتك المفضلة لشحن الألعاب والبطاقات الرقمية، ونعمل باستمرار على تقديم أفضل الأسعار والخدمات لجميع المستخدمين في العالم العربي .</p><p>نُقدم لك واجهة سهلة الاستخدام، وسرعة في تنفيذ الطلبات، واهتمام حقيقي بكل عميل . رؤيتنا أن نكون منصة رائدة تلبي احتياجاتك الرقمية بكفاءة واحترافية.</p></div>'+
+    '<div class="about"><img class="alogo" src="logo-full.png" alt="ULTRA STORE"><p>نحن فريق 𝘜𝘓𝘛𝘙𝘈-𝘚𝘛𝘖𝘙𝘌 نؤمن بأن تجربة الشراء يجب أن تكون بسيطة، سريعة، وآمنة. تأسسنا لنكون وجهتك المفضلة لشحن الألعاب والبطاقات الرقمية، ونعمل باستمرار على تقديم أفضل الأسعار والخدمات لجميع المستخدمين في العالم العربي .</p><p>نُقدم لك واجهة سهلة الاستخدام، وسرعة في تنفيذ الطلبات، واهتمام حقيقي بكل عميل . رؤيتنا أن نكون منصة رائدة تلبي احتياجاتك الرقمية بكفاءة واحترافية.</p></div>'+
     '<div class="group">تواصل معنا</div><div class="items">'+
     '<a class="item" href="https://wa.me/'+WA_MAIN+'" target="_blank" rel="noopener"><span class="name">واتساب (الرقم الأساسي)</span><span dir="ltr">+'+WA_MAIN+'</span></a>'+
     '<a class="item" href="https://wa.me/'+WA_SECOND+'" target="_blank" rel="noopener"><span class="name">رقم التواصل</span><span dir="ltr">+'+WA_SECOND+'</span></a>'+
@@ -1012,7 +1021,7 @@ function openLogin(){
       '<div class="lp-glow"></div><div class="lp-grid"></div>'+
       '<div class="lp-top"><button type="button" class="lp-lang" id="lpLang"></button><button type="button" class="lp-x" id="lpClose">'+ico("x",20)+'</button></div>'+
       '<div class="lp-wrap">'+
-        '<div class="lp-brand">ULTRA0 STORE</div>'+
+        '<img class="lp-logo" src="logo-mark.png" alt="" onerror="this.remove()"><div class="lp-brand">ULTRA STORE</div>'+
         '<h1 id="lpTitle"></h1><p id="lpSub"></p>'+
         '<form id="lpForm" novalidate>'+
           '<label class="lp-f">'+mail+'<input id="lpEmail" type="email" dir="ltr" autocomplete="email" inputmode="email"></label>'+
@@ -1577,7 +1586,7 @@ new MutationObserver(()=>{
 function drawCard(c,S){
   const x = c.getContext("2d"), W_ = 1080, H = 1350, g = x.createLinearGradient(0,0,W_,H);
   g.addColorStop(0,"#5a0010"); g.addColorStop(.5,"#1a0206"); g.addColorStop(1,"#000"); x.fillStyle = g; x.fillRect(0,0,W_,H);
-  x.direction = "rtl"; x.textAlign = "center"; x.fillStyle = "#fff"; x.font = "bold 56px sans-serif"; x.fillText("ULTRA0 STORE",W_/2,140);
+  x.direction = "rtl"; x.textAlign = "center"; x.fillStyle = "#fff"; x.font = "bold 56px sans-serif"; x.fillText("ULTRA STORE",W_/2,140);
   x.font = "40px sans-serif"; x.fillStyle = "#ff8a98"; x.fillText("ملخص رحلتك معنا",W_/2,215);
   x.fillStyle = "#fff"; x.font = "bold 72px sans-serif"; x.fillText(String(S.name).slice(0,20),W_/2,360);
   x.font = "bold 150px sans-serif"; x.fillStyle = "#ff3b52"; x.fillText(money(S.spent),W_/2,560);
@@ -1599,7 +1608,7 @@ async function openRecap(){
   openSheet("ملخصي",'<div class="rcards"><div><small>إجمالي الشحن</small><b>'+money(spent)+'</b></div><div><small>الطلبات</small><b>'+S.n+'</b></div><div><small>لعبتك المفضلة</small><b>'+esc(S.game)+'</b></div><div><small>معنا منذ</small><b>'+S.days+' يوم</b></div></div><canvas id="rcv" width="1080" height="1350" style="width:100%;border-radius:16px"></canvas><button class="submit" id="rshare" style="margin-top:10px">مشاركة البطاقة</button>');
   const c = $("rcv"); drawCard(c,S);
   $("rshare").onclick = ()=>c.toBlob(async b=>{ const f = new File([b],"ultra0-summary.png",{type:"image/png"});
-    if(navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:"ملخصي في ULTRA0"}); return; }catch(e){ if(e.name==="AbortError") return; } }
+    if(navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:"ملخصي في ULTRA STORE"}); return; }catch(e){ if(e.name==="AbortError") return; } }
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ultra0-summary.png"; a.click(); });
 }
 window.openRecap = openRecap;
@@ -1774,7 +1783,7 @@ if(location.hash==="#admin"){ let n=0; const t=setInterval(()=>{ n++;
       const ok = u => /^https?:\/\//i.test(u||"") || /^[\w./-]+\.(jpg|jpeg|png|webp|gif)$/i.test(u||"");
       const ns = h.slides.map(x=>{
         const o = {}; if(x.href && /^https?:\/\//i.test(x.href)) o.href = x.href;
-        if(x.img && ok(x.img)){ o.img = x.img; o.alt = x.t||"ULTRA0 STORE"; if(!o.href) o.go = "grid-top"; }
+        if(x.img && ok(x.img)){ o.img = x.img; o.alt = x.t||"ULTRA STORE"; if(!o.href) o.go = "grid-top"; }
         else { o.t = x.t||""; o.s = x.s||""; }
         return o;
       }).filter(x=>x.img||x.t);
@@ -1873,7 +1882,7 @@ function show(o){
   const t = words(o.t, 90, o.kash); delay += 160; const b = words(o.b, 55, o.kash);
   el.innerHTML = '<div class="wp-card">'+
     '<button class="wp-x" aria-label="إغلاق">'+ico("x",18)+'</button>'+
-    '<div class="wp-brand"><img src="icon-192.png" alt="" width="36" height="36" onerror="this.remove()"><b>'+esc(o.brand||"ULTRA0 STORE")+'</b></div>'+
+    '<div class="wp-brand"><img src="icon-192.png" alt="" width="36" height="36" onerror="this.remove()"><b>'+esc(o.brand||"ULTRA STORE")+'</b></div>'+
     '<h2 class="wp-t">'+t+'</h2><p class="wp-b">'+b+'</p>'+
     '<div class="wp-sep"></div><button class="wp-ok">'+esc(o.ok||"حسناً")+'</button>'+
     (o.link ? '<a class="wp-alt" href="'+esc(o.link)+'" target="_blank" rel="noopener">'+ico("chat",18)+esc(o.linkT)+'</a>' : '')+
@@ -2280,7 +2289,7 @@ new MutationObserver(()=>{
 const BASE=document.title;
 function setLink(cat){ try{ history.replaceState(history.state,"",location.pathname+location.search+"#c="+cat.id); document.title=cat.name+" | "+BASE;
   let m=document.querySelector('meta[name="description"]'); if(!m){ m=document.createElement("meta"); m.name="description"; document.head.appendChild(m); }
-  m.content="اشحن "+cat.name+" بأفضل الأسعار وتنفيذ سريع من ULTRA0 STORE"; }catch(e){} }
+  m.content="اشحن "+cat.name+" بأفضل الأسعار وتنفيذ سريع من ULTRA STORE"; }catch(e){} }
 function shareBtn(cat){ const b=document.createElement("button"); b.className="u0share"; b.type="button"; b.textContent="🔗 نسخ رابط "+cat.name;
   b.onclick=async()=>{ const u=location.origin+location.pathname+"#c="+cat.id; try{ if(navigator.share) await navigator.share({title:cat.name,url:u}); else { await navigator.clipboard.writeText(u); toast("تم نسخ الرابط"); } }catch(e){} }; return b; }
 const _ocL=openContact; openContact=async function(cat){ setLink(cat); const r=_ocL(cat); const pr=$("prods"); if(pr) pr.before(shareBtn(cat)); return r; };
