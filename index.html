@@ -514,7 +514,7 @@ header .logo .hlogo{height:30px;width:auto;flex:none;filter:drop-shadow(0 0 6px 
     <button class="icon-btn" id="themeBtn" aria-label="الوضع"></button>
     <button class="icon-btn" id="bellBtn" aria-label="الإشعارات" style="display:none"><span class="bdot" id="bdot"></span></button>
   </div>
-  <div class="logo"><img class="hlogo" src="logo-mark.png" alt="" onerror="this.remove()"><span>ULTRA STORE</span></div>
+  <div class="logo"><img class="hlogo" src="logo-mark.png" alt="ULTRA STORE" onerror="this.remove()"><span>ULTRA STORE</span></div>
   <button class="login" id="loginBtn">تسجيل الدخول</button>
   <button class="bal" id="balChip" aria-label="رصيدي" style="display:none"><i id="balIco"></i><b id="balTx">0.00</b></button>
 </header>
@@ -795,6 +795,10 @@ function tileEl(item, icon, onclick){
   if(!item.off) b.onclick = onclick;
   return b;
 }
+function fmtDesc(t){ return esc(t).replace(/(هام جدا|هام جداً|هام|مهم|تنبيه|تنويه|ملاحظة|ملاحظه|انتبه|تحذير|ممنوع|يرجى|بدون|فقط|\d+\s*ساعة|!+)/g,'<mark>$1</mark>'); }
+function _f1(p){ try{ const f = Array.isArray(p.fields) ? p.fields.find(x=>x && (x.key||x.name||x.label) && !["quantity","qty"].includes(x.key)) : null; return f||null; }catch(e){ return null; } }
+function fieldLabel(p){ const f=_f1(p); return f ? String(f.label||f.title||f.name||f.key||"رقم اللاعب (ID)") : "رقم اللاعب (ID)"; }
+function fieldHint(p){ const f=_f1(p); return f && f.placeholder ? String(f.placeholder) : "اكتب هنا"; }
 async function openContact(cat){
   const title = cat.name;
   openSheet(title,
@@ -804,7 +808,8 @@ async function openContact(cat){
   const showContact = ()=>{ if($("contact")) $("contact").style.display = ""; };
   if(!sb) return showContact();
   const pq = c=>sb.from("products").select(c).eq("category_id", cat.id).eq("active", true).eq("avail", true).order("sort").order("id");
-  let {data, error:pe} = await pq("id,name,price,qty_min,qty_max,description");
+  let {data, error:pe} = await pq("id,name,price,qty_min,qty_max,description,fields");
+  if(pe) ({data, error:pe} = await pq("id,name,price,qty_min,qty_max,description"));
   if(pe) ({data} = await pq("id,name,price,qty_min,qty_max"));
   if(!data || !data.length){ showContact(); return; }
   if(!$("prods")) return;
@@ -813,7 +818,7 @@ async function openContact(cat){
   $("prods").querySelectorAll(".pcard").forEach(c=>c.onclick=()=>{
     const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
     $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
-    $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b>'+(p.description?'<div class="pdesc">'+esc(p.description)+'</div>':'')+'<label class="field">رقم اللاعب (ID)<input id="pid" dir="ltr" placeholder="اكتب الـ ID هنا"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
+    $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b>'+(p.description?'<div class="pdesc">'+fmtDesc(p.description)+'</div>':'')+'<label class="field">'+esc(fieldLabel(p))+'<input id="pid" dir="ltr" placeholder="'+esc(fieldHint(p))+'"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
     const qtyNow = ()=> ranged ? Math.min(p.qty_max, Math.max(p.qty_min, parseInt($("pq").value)||p.qty_min)) : 1;
     const upd = ()=>{ $("tot").textContent = "الإجمالي: "+money(vprice(p.price*qtyNow()))+(vpct()?" (خصم "+me.vip.name+" "+vpct()+"%)":""); };
     if(ranged) $("pq").oninput = upd;
@@ -2240,6 +2245,18 @@ if(location.hash==="#account") setTimeout(()=>{ if(me) open(); else history.repl
 .u0f{display:block;font-size:13px;margin:8px 0}.u0f input{width:100%;margin-top:4px}
 .u0share{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.12));background:transparent;color:inherit;margin:0 0 10px;cursor:pointer}
 .u0pm{display:block;font-size:11.5px;line-height:1.7;opacity:.8;white-space:pre-wrap;margin-top:3px}
+
+/* v12: شعار فقط + وصف بشريط بلون الموقع + بطاقات منتجات */
+header .logo img.hlogo + span{display:none}
+header .logo .hlogo{height:40px}
+.pdesc{white-space:pre-wrap;margin:8px 0 10px;padding:10px 12px;border-radius:10px;border-right:3px solid var(--main2);background:rgba(224,30,55,.07);color:var(--text);font-size:13px;line-height:1.9}
+.pdesc mark{background:none;color:var(--main2);padding:0;font-weight:800}
+#prods .pgrid{gap:12px 10px}
+#prods .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px 8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:.2s}
+#prods .pcard .pimg{border:0;border-radius:12px}
+#prods .pcard.sel{border-color:var(--main2);box-shadow:0 0 0 1px var(--main2),0 8px 20px rgba(224,30,55,.28)}
+#prods .pcard .pn{font-size:12.5px;min-height:2.8em;display:flex;align-items:center;justify-content:center}
+#prods .pcard .pp{color:var(--text);font-weight:800;font-size:13px}
 </style>
 <script>
 /* ===== تلوين الكلمات: [red]كلمة[/] أو [#ffcc00]نص[/] ===== */
