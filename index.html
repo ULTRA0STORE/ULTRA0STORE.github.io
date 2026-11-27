@@ -1226,12 +1226,12 @@ loadMe();
   }
 
   function renderAmount(m){
-    clr(); view = "amount"; const min = +m.min_syp;
+    clr(); view = "amount"; const min = +m.min_syp, fee = Math.max(0, Math.min(90, +m.fee_pct||0));
     $("dBody").innerHTML =
       '<div class="dcard dhero"><div class="dimg'+(payImg(m)&&m.kind!=="qr"?' hasimg':'')+'">'+(m.kind==="qr"?mImg(m):payImg(m))+'</div><h2>'+esc(String(m.name).toUpperCase())+'</h2><span class="badge">Minimum: '+min.toFixed(2)+' SYP</span></div>'+
       '<div class="dcard"><h3>ملاحظات هامة</h3><ul class="dnote"><li>ادخل المبلغ واضغط على طلب</li><li>سيتم نقلك الى صفحة التحويل</li></ul><p class="red">لا تحول قبل إنشاء الفاتورة !!<br>الطريقة تعمل بشكل يدوي وتحتاج بعض الوقت للقبول .</p><p class="gold">سعر الصرف : '+rate+' ل.س مقابل الدولار الواحد .</p></div>'+
-      '<div class="dcard"><h3>المبلغ المراد دفعه</h3><div class="amt"><span>SYP</span><input id="dAmt" type="number" inputmode="decimal" placeholder="0"></div><div class="addrow"><b class="gr">سيضاف إلى رصيدك</b><b class="gr" id="dUsd">$0.000</b></div><button class="submit" id="dCreate">إنشاء فاتورة</button></div>';
-    $("dAmt").oninput = ()=>{ $("dUsd").textContent = usd((+$("dAmt").value||0)/rate); };
+      '<div class="dcard"><h3>المبلغ المراد دفعه</h3><div class="amt"><span>SYP</span><input id="dAmt" type="number" inputmode="decimal" placeholder="0"></div><div class="addrow"><b class="gr">سيضاف إلى رصيدك</b><b class="gr" id="dUsd">$0.000</b></div>'+(fee>0?'<div class="addrow"><span style="color:var(--muted)">شاملة عمولة إيداع '+fee+'%</span><span style="color:var(--muted)" id="dFee">-$0.000</span></div>':'')+'<button class="submit" id="dCreate">إنشاء فاتورة</button></div>';
+    $("dAmt").oninput = ()=>{ const g=(+$("dAmt").value||0)/rate; $("dUsd").textContent = usd(g*(1-fee/100)); if($("dFee")) $("dFee").textContent = "-"+usd(g*fee/100); };
     $("dCreate").onclick = async ()=>{
       const a = +$("dAmt").value;
       if(!(a >= min)){ toast("أقل مبلغ للإيداع "+min.toFixed(2)+" SYP"); return; }
