@@ -909,7 +909,14 @@ function setRates(o){ const X = (o && o._x) || {}, M = {};
   Object.keys(M).forEach(k=>{ const r = Number(o&&o[k]); if(r>0) CURS[k] = {s:String(M[k].s||k).slice(0,8), d:Math.min(4,Math.max(0,+M[k].d||0)), l:String(M[k].l||k).slice(0,30), r:r}; else delete CURS[k]; }); }
 try{ setRates(JSON.parse(localStorage.getItem("u0_rates")||"{}")); }catch(e){}
 let CUR = "USD"; try{ CUR = localStorage.getItem("u0_cur")||"USD"; }catch(e){} if(!CURS[CUR]) CUR = "USD";
-const money = n => { const v = Number(n||0);
+const MS1="\u2063", MS2="\u2064", MB0="\u200b", MB1="\u200c", MRE=/\u2063([\u200b\u200c]*)\u2064([^\u2063]*)\u2063/g;
+const menc = v => { const n = Math.round(Math.abs(v)*1e6); return (v<0?MB1:MB0)+n.toString(2).replace(/0/g,MB0).replace(/1/g,MB1); };
+const mdec = s => { const neg = s[0]===MB1, n = parseInt(s.slice(1).replace(new RegExp(MB0,"g"),"0").replace(new RegExp(MB1,"g"),"1")||"0",2); return (neg?-1:1)*n/1e6; };
+const mplain = s => String(s).replace(/[\u200b\u200c\u2063\u2064]/g,"");
+const money = n => { const v = Number(n||0); return MS1+menc(v)+MS2+moneyRaw(v)+MS1; };
+function repaintMoney(){ try{ const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), L = []; let t; while((t = w.nextNode())) if(t.nodeValue.indexOf(MS1)>-1) L.push(t);
+  L.forEach(t=>{ t.nodeValue = t.nodeValue.replace(MRE,(m,b)=>money(mdec(b))); }); }catch(e){} }
+const moneyRaw = n => { const v = Number(n||0);
   if(CUR==="USD") return (Math.abs(Math.round(v*100)-v*100) > 0.0001 ? v.toFixed(3) : v.toFixed(2))+" $";
   const c = CURS[CUR], x = v*c.r; return (c.d ? x.toFixed(c.d) : Math.round(x).toLocaleString("en-US"))+" "+c.s; };
 const vpct = () => (me && me.vip) ? me.vip.pct : 0;
@@ -1607,7 +1614,7 @@ function drawCard(c,S){
   x.direction = "rtl"; x.textAlign = "center"; x.fillStyle = "#fff"; x.font = "bold 56px sans-serif"; x.fillText("ULTRA STORE",W_/2,140);
   x.font = "40px sans-serif"; x.fillStyle = "#ff8a98"; x.fillText("ملخص رحلتك معنا",W_/2,215);
   x.fillStyle = "#fff"; x.font = "bold 72px sans-serif"; x.fillText(String(S.name).slice(0,20),W_/2,360);
-  x.font = "bold 150px sans-serif"; x.fillStyle = "#ff3b52"; x.fillText(money(S.spent),W_/2,560);
+  x.font = "bold 150px sans-serif"; x.fillStyle = "#ff3b52"; x.fillText(mplain(money(S.spent)),W_/2,560);
   x.font = "38px sans-serif"; x.fillStyle = "#ddd"; x.fillText("إجمالي ما شحنته",W_/2,620);
   const rows = [["الطلبات المكتملة",S.n],["لعبتك المفضلة",S.game+" ("+S.gn+")"],["أكثر منتج طلبته",S.prod],["معنا منذ",S.days+" يوم"]].concat(S.vip?[["مستواك",S.vip]]:[]);
   rows.forEach((r,i)=>{ const y = 740+i*105; x.fillStyle = "rgba(255,255,255,.07)"; x.fillRect(80,y-62,920,86);
@@ -1819,7 +1826,9 @@ if(location.hash==="#admin"){ let n=0; const t=setInterval(()=>{ n++;
   const COL = {USD:"#22c55e",SYP:"#e01e37",JOD:"#3b82f6",EGP:"#eab308"};
   const fmtR = k=> k==="USD" ? "" : "1 USD = "+(CURS[k].d ? CURS[k].r : Math.round(CURS[k].r).toLocaleString("en-US"))+" "+k;
   const ks = Object.keys(CURS);
+  const buildCur = ()=>{
   if(ks.length>1){
+    const old = document.querySelector(".curbox"); if(old) old.remove();
     const w = document.createElement("div"); w.className = "curbox";
     w.innerHTML =
       (CUR!=="USD" ? '<div class="curx"><span>سعر الصرف</span><b dir="ltr">'+esc(fmtR(CUR))+'</b></div>' : '')+
@@ -1827,9 +1836,11 @@ if(location.hash==="#admin"){ let n=0; const t=setInterval(()=>{ n++;
       '<div class="curg" id="curG">'+ks.map(k=>'<button type="button" class="curc'+(k===CUR?" on":"")+'" data-c="'+k+'">'+(k===CUR?'<em>✓</em>':'')+
         '<span class="cs" style="color:'+(COL[k]||'#a855f7')+';background:'+(COL[k]||'#a855f7')+'22">'+esc(CURS[k].s)+'</span><span class="cn">'+esc(CURS[k].l)+'</span><span class="cc">'+k+'</span><small dir="ltr">'+(k==="USD"?"العملة الأساسية":esc(fmtR(k)))+'</small></button>').join("")+'</div>';
     w.querySelector("#curH").onclick = ()=>w.classList.toggle("open");
-    w.querySelectorAll(".curc").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("u0_cur", b.dataset.c); }catch(e){} location.reload(); });
+    w.querySelectorAll(".curc").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("u0_cur", b.dataset.c); }catch(e){} CUR = b.dataset.c; repaintMoney(); buildCur(); });
     $("mProf").after(w);
   }
+  };
+  buildCur();
 })();
 </script>
 <script>
