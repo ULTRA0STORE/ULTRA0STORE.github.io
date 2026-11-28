@@ -780,19 +780,21 @@ async function openCat(c){
 }
 
 /* ===== صفحة الألعاب ===== */
-let pg = {stack:[]}, tree = [], prodCount = {};
+let pg = {stack:[]}, tree = [], prodCount = {}, availCount = {};
 async function loadTree(){
   if(!sb) return;
-  const [c,p] = await Promise.all([sb.from("categories").select("id,parent_id,name,image,soon,supplier_id").eq("active",true).order("sort").order("id"), sb.from("products").select("category_id").eq("active",true).eq("avail",true)]);
-  tree = c.data||[]; prodCount = {};
-  (p.data||[]).forEach(x=>{ if(x.category_id) prodCount[x.category_id]=(prodCount[x.category_id]||0)+1; });
+  const [c,p] = await Promise.all([sb.from("categories").select("id,parent_id,name,image,soon,supplier_id").eq("active",true).order("sort").order("id"), sb.from("products").select("category_id,avail").eq("active",true)]);
+  tree = c.data||[]; prodCount = {}; availCount = {};
+  (p.data||[]).forEach(x=>{ if(x.category_id){ prodCount[x.category_id]=(prodCount[x.category_id]||0)+1; if(x.avail!==false) availCount[x.category_id]=(availCount[x.category_id]||0)+1; } });
 }
 function imgOf(id){ let c = tree.find(x=>x.id===id); while(c){ if(c.image) return c.image; c = tree.find(x=>x.id===c.parent_id); } return null; }
+function totAv(id, g){ g = g||{}; if(g[id]) return [0,0]; g[id]=1; let t = prodCount[id]||0, a = availCount[id]||0; tree.forEach(c=>{ if(c.parent_id===id){ const r = totAv(c.id,g); t+=r[0]; a+=r[1]; } }); return [t,a]; }
+const isOut = id => { const r = totAv(id); return r[0]>0 && r[1]===0; };
 function tileEl(item, icon, onclick){
   const b = document.createElement("button");
-  b.className = "tile"+(item.off?" off":"");
-  b.innerHTML = '<div class="ico">'+(item.img?'<img src="'+esc(item.img)+'" alt="">':(IC[icon]?ico(icon,44):icon))+'</div><span>'+esc(item.n)+(item.off?" (قريباً)":"")+'</span>';
-  if(!item.off) b.onclick = onclick;
+  b.className = "tile"+((item.off||item.out)?" off":"");
+  b.innerHTML = '<div class="ico">'+(item.img?'<img src="'+esc(item.img)+'" alt="">':(IC[icon]?ico(icon,44):icon))+'</div><span>'+esc(item.n)+(item.off?" (قريباً)":item.out?" (غير متوفر)":"")+'</span>';
+  if(!item.off && !item.out) b.onclick = onclick;
   return b;
 }
 function fmtDesc(t){ return esc(t).replace(/(هام جدا|هام جداً|هام|مهم|تنبيه|تنويه|ملاحظة|ملاحظه|انتبه|تحذير|ممنوع|يرجى|بدون|فقط|\d+\s*ساعة|!+)/g,'<mark>$1</mark>'); }
@@ -805,17 +807,18 @@ async function openContact(cat){
     '<div id="prods"></div><div id="contact" style="display:none"><div class="note">للطلب أو معرفة السعر تواصل معنا</div><div class="items">'+
     '<a class="buy wa" style="padding:13px" target="_blank" rel="noopener" href="'+waLink(title)+'">تواصل عبر واتساب</a>'+
     '<a class="buy tg" style="padding:13px" target="_blank" rel="noopener" href="'+TG_CHANNEL+'">تيليجرام</a></div></div>');
-  const showContact = ()=>{ if($("contact")) $("contact").style.display = ""; };
+  const showContact = ()=>{ if($("prods")) $("prods").innerHTML = '<div class="none">غير متوفر حالياً</div>'; };
   if(!sb) return showContact();
-  const pq = c=>sb.from("products").select(c).eq("category_id", cat.id).eq("active", true).eq("avail", true).order("sort").order("id");
-  let {data, error:pe} = await pq("id,name,price,qty_min,qty_max,description,fields");
-  if(pe) ({data, error:pe} = await pq("id,name,price,qty_min,qty_max,description"));
-  if(pe) ({data} = await pq("id,name,price,qty_min,qty_max"));
+  const pq = c=>sb.from("products").select(c).eq("category_id", cat.id).eq("active", true).order("sort").order("id");
+  let {data, error:pe} = await pq("id,name,price,qty_min,qty_max,description,fields,avail");
+  if(pe) ({data, error:pe} = await pq("id,name,price,qty_min,qty_max,description,avail"));
+  if(pe) ({data} = await pq("id,name,price,qty_min,qty_max,avail"));
   if(!data || !data.length){ showContact(); return; }
   if(!$("prods")) return;
+  data = data.filter(x=>x.avail!==false).concat(data.filter(x=>x.avail===false));
   const img = imgOf(cat.id);
-  $("prods").innerHTML = '<div class="pgrid">'+data.map(p=>'<button class="pcard" data-p="'+p.id+'"><div class="pimg">'+(img?'<img src="'+esc(img)+'" alt="">':ico("game",44))+'</div><div class="pn">'+esc(p.name)+'</div><div class="pp">'+pshow(p.price)+(p.qty_max>p.qty_min?' للوحدة':'')+'</div></button>').join("")+'</div><div id="buybox"></div>';
-  $("prods").querySelectorAll(".pcard").forEach(c=>c.onclick=()=>{
+  $("prods").innerHTML = '<div class="pgrid">'+data.map(p=>'<button class="pcard'+(p.avail===false?' out':'')+'" data-p="'+p.id+'"><div class="pimg">'+(img?'<img src="'+esc(img)+'" alt="">':ico("game",44))+'</div><div class="pn">'+esc(p.name)+'</div><div class="pp">'+(p.avail===false?'غير متوفر':pshow(p.price)+(p.qty_max>p.qty_min?' للوحدة':''))+'</div></button>').join("")+'</div><div id="buybox"></div>';
+  $("prods").querySelectorAll(".pcard:not(.out)").forEach(c=>c.onclick=()=>{
     const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
     $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
     $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b>'+(p.description?'<div class="pdesc">'+fmtDesc(p.description)+'</div>':'')+'<label class="field">'+esc(fieldLabel(p))+'<input id="pid" dir="ltr" placeholder="'+esc(fieldHint(p))+'"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
@@ -863,7 +866,7 @@ function renderPage(){
   if(cur && pg.games && pg.stack.length===1) kids = kids.concat(legacy());
   kids = kids.filter(c => !q || c.name.toLowerCase().includes(q));
   if(!kids.length && !(cur && prodCount[cur.id])){ grid.innerHTML = '<div class="none">ما في نتائج</div>'; return; }
-  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:imgOf(k.id), off:k.soon}, "game", ()=>pick(k))));
+  kids.forEach(k => grid.appendChild(tileEl({n:k.name, img:imgOf(k.id), off:k.soon, out:isOut(k.id)}, "game", ()=>pick(k))));
   if(cur && prodCount[cur.id]) grid.appendChild(tileEl({n:"كل المنتجات"}, "cart", ()=>openContact(cur)));
 }
 function pick(k){
@@ -2267,6 +2270,8 @@ header .logo .hlogo{height:40px}
 #prods .pcard.sel{border-color:var(--main2);box-shadow:0 0 0 1px var(--main2),0 8px 20px rgba(224,30,55,.28)}
 #prods .pcard .pn{font-size:12.5px;min-height:2.8em;display:flex;align-items:center;justify-content:center}
 #prods .pcard .pp{color:var(--text);font-weight:800;font-size:13px}
+#prods .pcard.out{opacity:.45;filter:grayscale(1);pointer-events:none;cursor:not-allowed}
+#prods .pcard.out .pp{color:var(--muted)}
 </style>
 <script>
 /* ===== تلوين الكلمات: [red]كلمة[/] أو [#ffcc00]نص[/] ===== */
