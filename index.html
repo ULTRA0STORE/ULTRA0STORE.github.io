@@ -819,6 +819,16 @@ async function openContact(cat){
     const p = data.find(x=>x.id==c.dataset.p), ranged = p.qty_max>p.qty_min;
     $("prods").querySelectorAll(".pcard").forEach(x=>x.classList.toggle("sel", x===c));
     $("buybox").innerHTML = '<div class="buybox"><b>'+esc(p.name)+'</b>'+(p.description?'<div class="pdesc">'+fmtDesc(p.description)+'</div>':'')+'<label class="field">'+esc(fieldLabel(p))+'<input id="pid" dir="ltr" placeholder="'+esc(fieldHint(p))+'"></label>'+(ranged?'<label class="field">الكمية<input id="pq" type="number" min="'+p.qty_min+'" max="'+p.qty_max+'" value="'+p.qty_min+'"></label>':'')+'<div class="tot" id="tot"></div><button class="buy wa" id="goBuy" style="width:100%;padding:13px">شراء</button></div>';
+    try{ const fl = Array.isArray(p.fields) && p.fields.length ? p.fields.filter(f=>f && f.key && !["quantity","qty"].includes(f.key)) : null, pe = $("pid");
+      if(fl && pe && !(typeof EXTRA!=="undefined" && EXTRA[typeFor(cat)])){
+        pe.dataset.t = "prov";
+        if(fl.length===0){ pe.value = "-"; pe.dataset.t = "none"; pe.parentElement.style.display = "none"; }
+        else if(fl.length===1){ pe.parentElement.firstChild.nodeValue = String(fl[0].label||fl[0].key); pe.placeholder = "اكتب هنا"; if(/link|url/i.test(fl[0].key)){ pe.dir = "ltr"; pe.inputMode = "url"; } }
+        else { pe.parentElement.style.display = "none"; pe.value = "";
+          const ins = fl.map(f=>{ const l = document.createElement("label"); l.className = "field u0f"; l.innerHTML = esc(String(f.label||f.key))+(f.required===false?"":' <span style="color:#e3253d">*</span>')+'<input dir="ltr" placeholder="'+esc(String(f.label||f.key))+'">'; pe.parentElement.before(l); return {i:l.querySelector("input"), req:f.required!==false}; });
+          const sy = ()=>{ pe.value = ins.every(x=>!x.req || x.i.value.trim()) ? ins.map(x=>x.i.value.trim()).join(" | ") : ""; };
+          ins.forEach(x=>x.i.oninput = sy); } }
+    }catch(e){}
     const qtyNow = ()=> ranged ? Math.min(p.qty_max, Math.max(p.qty_min, parseInt($("pq").value)||p.qty_min)) : 1;
     const upd = ()=>{ $("tot").textContent = "الإجمالي: "+money(vprice(p.price*qtyNow()))+(vpct()?" (خصم "+me.vip.name+" "+vpct()+"%)":""); };
     if(ranged) $("pq").oninput = upd;
